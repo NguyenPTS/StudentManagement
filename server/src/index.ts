@@ -7,6 +7,7 @@ import swaggerJsdoc from "swagger-jsdoc";
 import swaggerOptions from "./config/swagger";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/user.routes";
+import studentRoutes from "./routes/student.routes";
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ mongoose
 // Routes
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
+app.use("/students", studentRoutes);
 
 app.get("/", (_, res) => {
   res.send("🎓 StudentManagement API is running...");

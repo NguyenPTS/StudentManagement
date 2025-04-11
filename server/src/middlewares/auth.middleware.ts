@@ -38,7 +38,11 @@ export const authenticateJWT = (
 };
 
 export const authorizeRole = (roles: Role[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+  return (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): void => {
     if (!req.user) {
       res.status(401).json({ message: "Unauthorized" });
       return;

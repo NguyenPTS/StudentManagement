@@ -1,129 +1,52 @@
 import { Router } from "express";
-import { authenticateJWT, authorizeRole } from "../middlewares/auth.middleware";
-import { Role } from "../models/user.model";
 import {
-  getUsers,
-  getUserById,
-  createUser,
-  updateUser,
-  deleteUser,
-} from "../controllers/user.controller";
+  getStudents,
+  getStudentById,
+  createStudent,
+  updateStudent,
+  deleteStudent,
+} from "../controllers/student.controller";
+import { authenticateJWT } from "../middlewares/auth.middleware";
+import { authorizeTeacher } from "../middlewares/role.middleware";
 
 const router = Router();
 
 /**
  * @swagger
- * components:
- *   schemas:
- *     User:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *           description: ID của người dùng
- *         email:
- *           type: string
- *           format: email
- *           description: Email của người dùng
- *         role:
- *           type: string
- *           enum: [admin, teacher]
- *           description: Vai trò của người dùng
- *         status:
- *           type: string
- *           enum: [active, blocked]
- *           description: Trạng thái tài khoản
- *         createdAt:
- *           type: string
- *           format: date-time
- *           description: Thời gian tạo tài khoản
- *         updatedAt:
- *           type: string
- *           format: date-time
- *           description: Thời gian cập nhật tài khoản
- *     CreateUser:
- *       type: object
- *       required:
- *         - email
- *         - password
- *         - role
- *       properties:
- *         email:
- *           type: string
- *           format: email
- *           description: Email của người dùng
- *         password:
- *           type: string
- *           format: password
- *           description: Mật khẩu của người dùng
- *         role:
- *           type: string
- *           enum: [admin, teacher]
- *           description: Vai trò của người dùng
- *     UpdateUser:
- *       type: object
- *       properties:
- *         email:
- *           type: string
- *           format: email
- *           description: Email của người dùng
- *         password:
- *           type: string
- *           format: password
- *           description: Mật khẩu mới của người dùng
- *         role:
- *           type: string
- *           enum: [admin, teacher]
- *           description: Vai trò của người dùng
- *         status:
- *           type: string
- *           enum: [active, blocked]
- *           description: Trạng thái tài khoản
- *     Error:
- *       type: object
- *       properties:
- *         message:
- *           type: string
- *           description: Thông báo lỗi
- */
-
-/**
- * @swagger
  * tags:
- *   name: User Management
- *   description: API endpoints for managing users
+ *   name: Student Management
+ *   description: API endpoints for managing students
  */
 
 /**
  * @swagger
- * /users:
+ * /students:
  *   get:
- *     summary: Lấy danh sách người dùng
- *     tags: [User Management]
+ *     summary: Lấy danh sách sinh viên
+ *     tags: [Student Management]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: role
+ *         name: classId
  *         schema:
  *           type: string
- *           enum: [admin, teacher]
- *         description: Lọc theo vai trò
+ *         description: Lọc theo lớp học
  *       - in: query
  *         name: status
  *         schema:
  *           type: string
- *           enum: [active, blocked]
+ *           enum: [active, inactive]
  *         description: Lọc theo trạng thái
  *     responses:
  *       200:
- *         description: Danh sách người dùng
+ *         description: Danh sách sinh viên
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/User'
+ *                 $ref: '#/components/schemas/Student'
  *       401:
  *         description: Chưa xác thực
  *         content:
@@ -137,14 +60,14 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/", authenticateJWT, authorizeRole(["admin"]), getUsers);
+router.get("/", authenticateJWT, authorizeTeacher, getStudents);
 
 /**
  * @swagger
- * /users/{id}:
+ * /students/{id}:
  *   get:
- *     summary: Lấy thông tin người dùng theo ID
- *     tags: [User Management]
+ *     summary: Lấy thông tin sinh viên theo ID
+ *     tags: [Student Management]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -153,14 +76,14 @@ router.get("/", authenticateJWT, authorizeRole(["admin"]), getUsers);
  *         required: true
  *         schema:
  *           type: string
- *         description: ID của người dùng
+ *         description: ID của sinh viên
  *     responses:
  *       200:
- *         description: Thông tin người dùng
+ *         description: Thông tin sinh viên
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/Student'
  *       401:
  *         description: Chưa xác thực
  *         content:
@@ -174,20 +97,20 @@ router.get("/", authenticateJWT, authorizeRole(["admin"]), getUsers);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Người dùng không tồn tại
+ *         description: Sinh viên không tồn tại
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/:id", authenticateJWT, authorizeRole(["admin"]), getUserById);
+router.get("/:id", authenticateJWT, authorizeTeacher, getStudentById);
 
 /**
  * @swagger
- * /users:
+ * /students:
  *   post:
- *     summary: Tạo người dùng mới
- *     tags: [User Management]
+ *     summary: Tạo sinh viên mới
+ *     tags: [Student Management]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -197,29 +120,37 @@ router.get("/:id", authenticateJWT, authorizeRole(["admin"]), getUserById);
  *           schema:
  *             type: object
  *             required:
+ *               - name
  *               - email
- *               - password
- *               - role
+ *               - classId
  *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Tên sinh viên
  *               email:
  *                 type: string
  *                 format: email
- *                 description: Email của người dùng
- *               password:
+ *                 description: Email của sinh viên
+ *               classId:
  *                 type: string
- *                 format: password
- *                 description: Mật khẩu của người dùng
- *               role:
+ *                 description: ID của lớp học
+ *               phone:
  *                 type: string
- *                 enum: [admin, teacher]
- *                 description: Vai trò của người dùng
+ *                 description: Số điện thoại
+ *               address:
+ *                 type: string
+ *                 description: Địa chỉ
+ *               status:
+ *                 type: string
+ *                 enum: [active, inactive]
+ *                 description: Trạng thái của sinh viên
  *     responses:
  *       201:
- *         description: Người dùng được tạo thành công
+ *         description: Sinh viên được tạo thành công
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/Student'
  *       400:
  *         description: Dữ liệu không hợp lệ
  *         content:
@@ -239,14 +170,14 @@ router.get("/:id", authenticateJWT, authorizeRole(["admin"]), getUserById);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/", authenticateJWT, authorizeRole(["admin"]), createUser);
+router.post("/", authenticateJWT, authorizeTeacher, createStudent);
 
 /**
  * @swagger
- * /users/{id}:
+ * /students/{id}:
  *   put:
- *     summary: Cập nhật thông tin người dùng
- *     tags: [User Management]
+ *     summary: Cập nhật thông tin sinh viên
+ *     tags: [Student Management]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -255,7 +186,7 @@ router.post("/", authenticateJWT, authorizeRole(["admin"]), createUser);
  *         required: true
  *         schema:
  *           type: string
- *         description: ID của người dùng
+ *         description: ID của sinh viên
  *     requestBody:
  *       required: true
  *       content:
@@ -263,29 +194,33 @@ router.post("/", authenticateJWT, authorizeRole(["admin"]), createUser);
  *           schema:
  *             type: object
  *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Tên sinh viên
  *               email:
  *                 type: string
  *                 format: email
- *                 description: Email của người dùng
- *               password:
+ *                 description: Email của sinh viên
+ *               classId:
  *                 type: string
- *                 format: password
- *                 description: Mật khẩu mới của người dùng
- *               role:
+ *                 description: ID của lớp học
+ *               phone:
  *                 type: string
- *                 enum: [admin, teacher]
- *                 description: Vai trò của người dùng
+ *                 description: Số điện thoại
+ *               address:
+ *                 type: string
+ *                 description: Địa chỉ
  *               status:
  *                 type: string
- *                 enum: [active, blocked]
- *                 description: Trạng thái tài khoản
+ *                 enum: [active, inactive]
+ *                 description: Trạng thái của sinh viên
  *     responses:
  *       200:
  *         description: Cập nhật thành công
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               $ref: '#/components/schemas/Student'
  *       400:
  *         description: Dữ liệu không hợp lệ
  *         content:
@@ -305,20 +240,20 @@ router.post("/", authenticateJWT, authorizeRole(["admin"]), createUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Người dùng không tồn tại
+ *         description: Sinh viên không tồn tại
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put("/:id", authenticateJWT, authorizeRole(["admin"]), updateUser);
+router.put("/:id", authenticateJWT, authorizeTeacher, updateStudent);
 
 /**
  * @swagger
- * /users/{id}:
+ * /students/{id}:
  *   delete:
- *     summary: Xóa người dùng
- *     tags: [User Management]
+ *     summary: Xóa sinh viên
+ *     tags: [Student Management]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -327,7 +262,7 @@ router.put("/:id", authenticateJWT, authorizeRole(["admin"]), updateUser);
  *         required: true
  *         schema:
  *           type: string
- *         description: ID của người dùng
+ *         description: ID của sinh viên
  *     responses:
  *       200:
  *         description: Xóa thành công
@@ -338,7 +273,7 @@ router.put("/:id", authenticateJWT, authorizeRole(["admin"]), updateUser);
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Người dùng đã được xóa
+ *                   example: Sinh viên đã được xóa
  *       401:
  *         description: Chưa xác thực
  *         content:
@@ -352,12 +287,12 @@ router.put("/:id", authenticateJWT, authorizeRole(["admin"]), updateUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Người dùng không tồn tại
+ *         description: Sinh viên không tồn tại
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete("/:id", authenticateJWT, authorizeRole(["admin"]), deleteUser);
+router.delete("/:id", authenticateJWT, authorizeTeacher, deleteStudent);
 
 export default router;

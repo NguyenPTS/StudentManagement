@@ -1,60 +1,39 @@
-import { Request, Response } from "express";
-import User from "../models/user.model";
+import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import User from "../models/user.model";
 
 export const login = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
-  const { email, password } = req.body;
-
-  // Basic validation
-  if (!email || !password) {
-    res.status(400).json({ message: "Vui lòng cung cấp email và mật khẩu" });
-    return;
-  }
-
   try {
-    const user = await User.findOne({ email }).select('+password');
+    const { email, password } = req.body;
+
+    // Tìm người dùng trong cơ sở dữ liệu
+    const user = await User.findOne({ email });
     if (!user) {
-      res.status(404).json({ message: "Tài khoản không tồn tại" });
+      res.status(400).json({ message: "User not found" });
       return;
     }
 
-    // Check account status
-    if (user.status === 'blocked') {
-      res.status(403).json({ message: "Tài khoản đã bị khóa" });
-      return;
-    }
-
+    // Kiểm tra mật khẩu
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      res.status(400).json({ message: "Sai mật khẩu" });
+      res.status(400).json({ message: "Invalid credentials" });
       return;
     }
 
+    // Tạo JWT token
     const token = jwt.sign(
-      { id: user._id, role: user.role, email: user.email },
+      { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET!,
-      {
-        expiresIn: "1d",
-      }
+      { expiresIn: "1h" }
     );
 
-    // Remove password from response
-    const userResponse = {
-      id: user._id,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    };
-
-    res.json({ token, user: userResponse });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Lỗi máy chủ" });
+    res.json({ token });
+  } catch (error) {
+    next(error); // Chuyển lỗi sang middleware xử lý lỗi
   }
 };

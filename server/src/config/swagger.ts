@@ -11,6 +11,68 @@ const swaggerOptions = {
     servers: [
       {
         url: "http://localhost:5000", // Thay đổi URL nếu cần
+        description: "Development server",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+          description:
+            'JWT Authorization header using the Bearer scheme. Example: "Authorization: Bearer {token}"',
+        },
+      },
+      schemas: {
+        Error: {
+          type: "object",
+          properties: {
+            message: {
+              type: "string",
+              description: "Error message",
+            },
+          },
+        },
+        User: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "User ID",
+            },
+            email: {
+              type: "string",
+              format: "email",
+              description: "User email",
+            },
+            role: {
+              type: "string",
+              enum: ["admin", "teacher"],
+              description: "User role",
+            },
+            status: {
+              type: "string",
+              enum: ["active", "blocked"],
+              description: "User status",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "Creation timestamp",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+              description: "Last update timestamp",
+            },
+          },
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
       },
     ],
   },
