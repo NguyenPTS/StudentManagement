@@ -53,25 +53,47 @@ export const createStudent = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { name, mssv, class: classFilter, status } = req.body;
+    const { 
+      name, 
+      mssv, 
+      email,
+      dob,
+      class: classFilter, 
+      phone,
+      address,
+      status = "active" 
+    } = req.body;
 
-    const existingStudent = await Student.findOne({ mssv });
+    // Kiểm tra MSSV đã tồn tại chưa
+    const existingStudent = await Student.findOne({ $or: [{ mssv }, { email }] });
     if (existingStudent) {
-      res.status(400).json({ message: "MSSV already exists" });
+      res.status(400).json({ 
+        message: existingStudent.mssv === mssv 
+          ? "MSSV đã tồn tại" 
+          : "Email đã tồn tại" 
+      });
       return;
     }
+
+    // Tạo sinh viên mới
     const student = new Student({
       name,
       mssv,
+      email,
+      dob: new Date(dob),
       class: classFilter,
-      status,
+      phone,
+      address,
+      status
     });
+
     await student.save();
     res.status(201).json(student);
   } catch (error) {
     next(error);
   }
 };
+
 export const updateStudent = async (
   req: Request,
   res: Response,
@@ -93,6 +115,7 @@ export const updateStudent = async (
     next(error);
   }
 };
+
 export const deleteStudent = async (
   req: Request,
   res: Response,

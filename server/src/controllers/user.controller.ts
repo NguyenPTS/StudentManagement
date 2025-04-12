@@ -44,7 +44,7 @@ export const createUser = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, name } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -60,6 +60,7 @@ export const createUser = async (
       email,
       password: hashedPassword,
       role,
+      name,
     });
 
     await user.save();
@@ -76,7 +77,7 @@ export const updateUser = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { email, password, role, status } = req.body;
+    const { email, password, role, status, name } = req.body;
     const user = await User.findById(req.params.id);
 
     if (!user) {
@@ -88,6 +89,7 @@ export const updateUser = async (
     if (password) user.password = await bcrypt.hash(password, 10);
     if (role) user.role = role;
     if (status) user.status = status;
+    if (name) user.name = name;
 
     await user.save();
     const { password: _, ...userResponse } = user.toObject();

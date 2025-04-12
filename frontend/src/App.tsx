@@ -1,15 +1,18 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
+// src/App.tsx
+import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import AppRouter from "./router";
+import Layout from "./components/layout/Layout";
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-        {/* các route khác như /dashboard sẽ thêm sau */}
-      </Routes>
-    </Router>
+    <BrowserRouter>
+      <AuthProvider>
+        <Layout>
+          <AppRouter />
+        </Layout>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

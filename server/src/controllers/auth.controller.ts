@@ -14,14 +14,20 @@ export const login = async (
     // Tìm người dùng trong cơ sở dữ liệu
     const user = await User.findOne({ email });
     if (!user) {
-      res.status(400).json({ message: "User not found" });
+      res.status(404).json({ message: "Tài khoản không tồn tại" });
+      return;
+    }
+
+    // Kiểm tra trạng thái tài khoản
+    if (user.status === "blocked") {
+      res.status(403).json({ message: "Tài khoản đã bị khóa" });
       return;
     }
 
     // Kiểm tra mật khẩu
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      res.status(400).json({ message: "Invalid credentials" });
+      res.status(400).json({ message: "Mật khẩu không đúng" });
       return;
     }
 
@@ -32,8 +38,19 @@ export const login = async (
       { expiresIn: "1h" }
     );
 
-    res.json({ token });
+    // Trả về thông tin người dùng và token
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }
+    });
   } catch (error) {
-    next(error); // Chuyển lỗi sang middleware xử lý lỗi
+    next(error);
   }
 };
