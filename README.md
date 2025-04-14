@@ -88,29 +88,29 @@ npm start
 
 ```
 project-name/
-├── frontend/                # Frontend React
-│   ├── public/              # Tài nguyên tĩnh
-│   ├── src/                 # Mã nguồn
-│   │   ├── components/      # Components tái sử dụng
-│   │   ├── pages/           # Các trang
-│   │   ├── context/         # Context API
-│   │   ├── hooks/           # Custom hooks
-│   │   ├── services/        # API services
-│   │   ├── styles/          # CSS/SCSS
-│   │   └── utils/           # Tiện ích
-│   └── package.json         # Dependencies frontend
+├── frontend/                
+│   ├── public/               Tài nguyên tĩnh
+│   ├── src/                  Mã nguồn
+│   │   ├── components/       Components tái sử dụng
+│   │   ├── pages/            Các trang
+│   │   ├── context/          Context API
+│   │   ├── hooks/            Custom hooks
+│   │   ├── services/         API services
+│   │   ├── styles/           CSS/SCSS
+│   │   └── utils/            Tiện ích
+│   └── package.json          Dependencies frontend
 │
-├── server/                  # Backend Node.js
-│   ├── src/                 # Mã nguồn
-│   │   ├── controllers/     # Controllers
-│   │   ├── models/          # Models
-│   │   ├── routes/          # Routes
-│   │   ├── middleware/      # Middleware
-│   │   ├── utils/           # Tiện ích
-│   │   └── config/          # Cấu hình
-│   └── package.json         # Dependencies backend
+├── server/                   Backend Node.js
+│   ├── src/                  Mã nguồn
+│   │   ├── controllers/      Controllers
+│   │   ├── models/           Models
+│   │   ├── routes/           Routes
+│   │   ├── middleware/       Middleware
+│   │   ├── utils/            Tiện ích
+│   │   └── config/           Cấu hình
+│   └── package.json          Dependencies backend
 │
-└── README.md                # Tài liệu dự án
+└── README.md                 Tài liệu dự án
 ## Cách sử dụng
 
 ### Đăng nhập
