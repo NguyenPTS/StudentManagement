@@ -33,12 +33,8 @@ const StudentList = () => {
   const handleDelete = async (id: string) => {
     try {
       setDeleteLoading(id);
-      await studentService.softDelete(id);
-      setStudents(
-        students.map((student) =>
-          student.id === id ? { ...student, status: "inactive" } : student
-        )
-      );
+      await studentService.delete(id);
+      setStudents(students.filter((student) => student.id !== id));
     } catch (err) {
       setError("Không thể xóa sinh viên. Vui lòng thử lại sau.");
       console.error("Error deleting student:", err);
@@ -48,11 +44,11 @@ const StudentList = () => {
   };
 
   const handleEdit = (id: string) => {
-    navigate(`/student/edit/${id}`);
+    navigate(`/teacher/create/${id}/update`);
   };
 
   const handleAdd = () => {
-    navigate("/student/add");
+    navigate("/teacher/create");
   };
 
   if (loading) {

@@ -17,8 +17,15 @@ const Header = () => {
       <nav className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           {/* Logo */}
-          <Link to="/" className="text-xl font-bold text-gray-800">
-            Student Management
+          <Link to="/" className="flex items-center space-x-2">
+            <img 
+              src="/images/japan-flag.svg" 
+              alt="Japanese Flag" 
+              className="h-8 w-auto"
+            />
+            <span className="text-xl font-bold text-gray-800">
+              Japanese
+            </span>
           </Link>
 
           {/* User Menu */}

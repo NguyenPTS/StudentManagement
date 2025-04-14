@@ -8,7 +8,7 @@ export interface Student {
   address: string;
   dateOfBirth?: string; // Optional for backward compatibility
   dob?: string; // Server field name
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'graduated';
   createdAt: string;
   updatedAt: string;
   mssv?: string;
@@ -18,7 +18,9 @@ export interface Student {
 export type CreateStudentDTO = Omit<Student, 'id' | 'createdAt' | 'updatedAt'>;
 export type UpdateStudentDTO = Partial<CreateStudentDTO>;
 
-const API_URL = 'http://localhost:5000/students';
+// API URL from environment or default to localhost:5000
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/students';
+console.log('API URL:', API_URL);
 
 // Create axios instance with default config
 const api = axios.create({
@@ -26,15 +28,16 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 seconds timeout
 });
 
 // Add request interceptor to add token to headers
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    console.log('Current token in interceptor:', token);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('Request with token:', config.url);
     } else {
       console.warn('No token found in localStorage');
     }
@@ -49,21 +52,25 @@ api.interceptors.request.use(
 // Add response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
-    console.log('Response received:', response);
+    console.log('Response received:', response.config.url, response.status);
     return response;
   },
   (error) => {
     if (error.response) {
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx
-      console.error('Response error:', {
+      console.error('API Error:', {
+        url: error.config?.url,
         status: error.response.status,
         data: error.response.data,
         headers: error.response.headers,
       });
     } else if (error.request) {
       // The request was made but no response was received
-      console.error('Request error:', error.request);
+      console.error('Network Error:', {
+        url: error.config?.url,
+        request: error.request,
+      });
     } else {
       // Something happened in setting up the request that triggered an Error
       console.error('Error:', error.message);
@@ -73,25 +80,12 @@ api.interceptors.response.use(
 );
 
 const studentService = {
-  getAll: async (): Promise<Student[]> => {
+  getAll: async (params?: { class?: string; status?: string; page?: number; limit?: number }): Promise<Student[]> => {
     try {
-      console.log('Making GET request to:', API_URL);
-      const token = localStorage.getItem('token');
-      console.log('Using token:', token);
-      
-      const response = await api.get('/', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      console.log('API Response:', response.data);
+      const response = await api.get('/', { params });
       return response.data;
     } catch (error: any) {
-      console.error('Error in getAll:', error.response || error);
-      if (error.response?.status === 401) {
-        console.error('Unauthorized: Token may be invalid or expired');
-      }
+      console.error('Error in getAll:', error);
       throw error;
     }
   },
@@ -101,76 +95,27 @@ const studentService = {
       const response = await api.get(`/${id}`);
       return response.data;
     } catch (error: any) {
-      console.error('Error in getById:', error.response || error);
+      console.error('Error in getById:', error);
       throw error;
     }
   },
 
-  create: async (student: CreateStudentDTO): Promise<Student> => {
+  create: async (data: CreateStudentDTO): Promise<Student> => {
     try {
-      // Format the data before sending
-      const formattedData = {
-        name: student.name?.trim(),
-        email: student.email?.trim(),
-        phone: student.phone?.trim(),
-        address: student.address?.trim(),
-        dob: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString() : null,
-        status: student.status || 'active',
-        mssv: student.mssv || null,
-        class: student.class || null
-      };
-
-      // Validate required fields
-      if (!formattedData.name || !formattedData.email || !formattedData.phone || !formattedData.address || !formattedData.dob) {
-        throw new Error('Missing required fields');
-      }
-
-      console.log('Creating student with formatted data:', formattedData);
-      const token = localStorage.getItem('token');
-      console.log('Using token:', token);
-      
-      const response = await api.post('/', formattedData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      console.log('Create response:', response.data);
+      const response = await api.post('/', data);
       return response.data;
     } catch (error: any) {
-      console.error('Detailed create error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          headers: error.config?.headers,
-          data: error.config?.data
-        }
-      });
-
-      // Handle specific error cases
-      if (error.response?.status === 500) {
-        const errorMessage = error.response?.data?.message || 'Lỗi server. Vui lòng thử lại sau.';
-        throw new Error(errorMessage);
-      } else if (error.response?.status === 401) {
-        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-      } else if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      } else {
-        throw new Error('Không thể tạo sinh viên. Vui lòng thử lại sau.');
-      }
+      console.error('Error in create:', error);
+      throw error;
     }
   },
 
-  update: async (id: string, student: UpdateStudentDTO): Promise<Student> => {
+  update: async (id: string, data: UpdateStudentDTO): Promise<Student> => {
     try {
-      const response = await api.put(`/${id}`, student);
+      const response = await api.put(`/${id}`, data);
       return response.data;
     } catch (error: any) {
-      console.error('Error in update:', error.response || error);
+      console.error('Error in update:', error);
       throw error;
     }
   },
@@ -179,7 +124,7 @@ const studentService = {
     try {
       await api.delete(`/${id}`);
     } catch (error: any) {
-      console.error('Error in delete:', error.response || error);
+      console.error('Error in delete:', error);
       throw error;
     }
   },

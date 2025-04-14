@@ -1,68 +1,116 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Modal, Form, Input, Select, message, Popconfirm, Switch, Tooltip, Alert } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, LockOutlined, UnlockOutlined, KeyOutlined, UserOutlined } from '@ant-design/icons';
-import userService, { User, CreateUserDTO, UpdateUserDTO, ResetPasswordDTO } from '../../services/userService';
+import React, { useState } from 'react';
+import { Table, Button, Space, Modal, Form, Input, Select, message, Popconfirm, Alert } from 'antd';
+import { EditOutlined, DeleteOutlined, PlusOutlined, LockOutlined, UnlockOutlined, KeyOutlined } from '@ant-design/icons';
+import userService, { User, CreateUserDTO, UpdateUserDTO } from '../../services/userService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 
 const { Option } = Select;
 
 const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [resetPasswordModalVisible, setResetPasswordModalVisible] = useState(false);
+  const [resetPasswordMethod, setResetPasswordMethod] = useState<'email' | 'manual'>('email');
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [form] = Form.useForm();
   const [resetPasswordForm] = Form.useForm();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Kiểm tra token
-      const token = localStorage.getItem('token');
-      console.log('Token in UserManagement:', token);
-      
-      if (!token) {
-        setError('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
-        return;
-      }
-      
-      const data = await userService.getAll();
-      console.log('Fetched users:', data);
-      
-      if (Array.isArray(data)) {
-        console.log('User data structure:', data.map(user => ({
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          status: user.status
-        })));
-        setUsers(data);
-        setFilteredUsers(data);
-      } else {
-        console.error('Invalid data format received:', data);
-        setError('Dữ liệu người dùng không hợp lệ');
-      }
-    } catch (error: any) {
-      console.error('Error fetching users:', error);
-      setError(error.message || 'Không thể tải danh sách người dùng');
-    } finally {
-      setLoading(false);
+  // Fetch users with React Query
+  const { data: users = [], isLoading, error } = useQuery({
+    queryKey: ['users'],
+    queryFn: userService.getAll,
+  });
+
+  // Create user mutation
+  const createMutation = useMutation({
+    mutationFn: (data: CreateUserDTO) => userService.create(data),
+    onSuccess: () => {
+      message.success('Tạo người dùng thành công');
+      setModalVisible(false);
+      form.resetFields();
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Không thể tạo người dùng');
+    },
+  });
+
+  // Update user mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserDTO }) => userService.update(id, data),
+    onSuccess: () => {
+      message.success('Cập nhật người dùng thành công');
+      setModalVisible(false);
+      form.resetFields();
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error: any) => {
+      message.error(error.message || 'Không thể cập nhật người dùng');
+    },
+  });
+
+  // Delete user mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => userService.delete(id),
+    onSuccess: () => {
+      message.success('Xóa người dùng thành công');
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error: any) => {
+      message.error(error.message || 'Không thể xóa người dùng');
+    },
+  });
+
+  // Toggle status mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: (id: string) => {
+      const user = users.find(u => u._id === id);
+      if (!user) throw new Error('User not found');
+      return userService.updateStatus(id, user.status === 'active' ? 'blocked' : 'active');
+    },
+    onSuccess: () => {
+      message.success('Thay đổi trạng thái tài khoản thành công');
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Không thể thay đổi trạng thái tài khoản');
     }
-  };
+  });
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  // Request password reset mutation
+  const requestPasswordResetMutation = useMutation({
+    mutationFn: (email: string) => userService.requestPasswordReset(email),
+    onSuccess: () => {
+      message.success('Đã gửi email đặt lại mật khẩu');
+      setResetPasswordModalVisible(false);
+      resetPasswordForm.resetFields();
+    },
+    onError: (error: any) => {
+      message.error(error.message || 'Không thể gửi yêu cầu đặt lại mật khẩu');
+    },
+  });
+
+  // Reset password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: (data: { id: string; password: string }) => 
+      userService.resetPassword(data.id),
+    onSuccess: () => {
+      message.success('Đặt lại mật khẩu thành công');
+      setResetPasswordModalVisible(false);
+    },
+    onError: (error: any) => {
+      message.error(error.response?.data?.message || 'Không thể đặt lại mật khẩu');
+    }
+  });
 
   const handleAdd = () => {
+    console.log('handleAdd called');
     setEditingUser(null);
     form.resetFields();
     setModalVisible(true);
+    console.log('modalVisible set to true');
   };
 
   const handleEdit = (user: User) => {
@@ -76,66 +124,103 @@ const UserManagement: React.FC = () => {
     setModalVisible(true);
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await userService.delete(id);
-      message.success('Xóa người dùng thành công');
-      fetchUsers();
-    } catch (error: any) {
-      message.error(error.message || 'Không thể xóa người dùng');
-    }
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
   };
 
   const handleModalOk = async () => {
     try {
       const values = await form.validateFields();
       if (editingUser) {
-        await userService.update(editingUser._id, values as UpdateUserDTO);
-        message.success('Cập nhật người dùng thành công');
+        updateMutation.mutate({ id: editingUser._id, data: values });
       } else {
-        const createData: CreateUserDTO = {
-          ...values,
-          password: values.password || '123456', // Default password
-        };
-        await userService.create(createData);
-        message.success('Tạo người dùng thành công');
+        createMutation.mutate(values);
       }
-      setModalVisible(false);
-      fetchUsers();
-    } catch (error: any) {
-      message.error(error.message || 'Không thể lưu thông tin người dùng');
+    } catch (error) {
+      console.error('Form validation failed:', error);
     }
   };
 
-  const handleResetPassword = async () => {
+  const handleResetPassword = (user: User) => {
+    setEditingUser(user);
+    resetPasswordForm.resetFields();
+    setResetPasswordMethod('email');
+    setResetPasswordModalVisible(true);
+  };
+
+  const handleResetPasswordSubmit = async () => {
     try {
       const values = await resetPasswordForm.validateFields();
-      const data: ResetPasswordDTO = {
-        email: editingUser!.email,
-        otp: values.otp,
-        newPassword: values.newPassword,
-      };
-      await userService.resetPassword(data);
-      message.success('Đặt lại mật khẩu thành công');
-      setResetPasswordModalVisible(false);
-    } catch (error: any) {
-      message.error(error.message || 'Không thể đặt lại mật khẩu');
+      if (resetPasswordMethod === 'email' && editingUser) {
+        requestPasswordResetMutation.mutate(editingUser.email);
+      } else if (resetPasswordMethod === 'manual' && editingUser) {
+        resetPasswordMutation.mutate({ 
+          id: editingUser._id, 
+          password: values.newPassword 
+        });
+      }
+    } catch (error) {
+      console.error('Form validation failed:', error);
     }
   };
 
-  const handleToggleStatus = async (user: User) => {
-    try {
-      if (!user._id) {
-        message.error('Không thể thay đổi trạng thái: ID người dùng không hợp lệ');
-        return;
-      }
+  const handleToggleStatus = (user: User) => {
+    Modal.confirm({
+      title: 'Xác nhận thay đổi trạng thái',
+      content: `Bạn có chắc chắn muốn ${user.status === 'active' ? 'khóa' : 'mở khóa'} tài khoản này?`,
+      okText: 'Có',
+      cancelText: 'Không',
+      onOk: () => toggleStatusMutation.mutate(user._id),
+    });
+  };
 
-      const newStatus = user.status === 'active' ? 'inactive' : 'active';
-      await userService.toggleStatus(user._id, newStatus);
-      message.success(`Đã ${newStatus === 'active' ? 'mở khóa' : 'khóa'} tài khoản thành công`);
-      fetchUsers();
-    } catch (error: any) {
-      message.error(error.message || 'Không thể thay đổi trạng thái người dùng');
+  const handleStatusChange = async (id: string, currentStatus: string) => {
+    try {
+      let newStatus: 'active' | 'inactive' | 'blocked';
+      switch (currentStatus) {
+        case 'active':
+          newStatus = 'inactive';
+          break;
+        case 'inactive':
+          newStatus = 'blocked';
+          break;
+        case 'blocked':
+          newStatus = 'active';
+          break;
+        default:
+          newStatus = 'active';
+      }
+      return userService.updateStatus(id, newStatus);
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      message.error('Có lỗi xảy ra khi cập nhật trạng thái người dùng');
+      throw error;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'text-green-600';
+      case 'inactive':
+        return 'text-yellow-600';
+      case 'blocked':
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'Hoạt động';
+      case 'inactive':
+        return 'Không hoạt động';
+      case 'blocked':
+        return 'Đã khóa';
+      default:
+        return 'Không xác định';
     }
   };
 
@@ -161,8 +246,8 @@ const UserManagement: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <span className={status === 'active' ? 'text-green-600' : 'text-red-600'}>
-          {status === 'active' ? 'Hoạt động' : 'Đã khóa'}
+        <span className={getStatusColor(status)}>
+          {getStatusText(status)}
         </span>
       ),
     },
@@ -181,11 +266,7 @@ const UserManagement: React.FC = () => {
           <Button
             type="text"
             icon={<KeyOutlined />}
-            onClick={() => {
-              setEditingUser(record);
-              resetPasswordForm.resetFields();
-              setResetPasswordModalVisible(true);
-            }}
+            onClick={() => handleResetPassword(record)}
           >
             Đặt lại mật khẩu
           </Button>
@@ -197,7 +278,8 @@ const UserManagement: React.FC = () => {
             {record.status === 'active' ? 'Khóa' : 'Mở khóa'}
           </Button>
           <Popconfirm
-            title="Bạn có chắc chắn muốn xóa người dùng này?"
+            title="Xác nhận xóa người dùng"
+            description="Bạn có chắc chắn muốn xóa người dùng này?"
             onConfirm={() => handleDelete(record._id)}
             okText="Có"
             cancelText="Không"
@@ -215,15 +297,18 @@ const UserManagement: React.FC = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Quản lý người dùng</h1>
-        <Button type="primary" onClick={handleAdd}>
-          Thêm người dùng
+        <Button 
+          type="primary" 
+          onClick={handleAdd}
+        >
+          Thêm người dùng mới
         </Button>
       </div>
 
       {error && (
         <Alert
           message="Lỗi"
-          description={error}
+          description={error instanceof Error ? error.message : 'Không thể tải danh sách người dùng'}
           type="error"
           showIcon
           className="mb-4"
@@ -233,26 +318,25 @@ const UserManagement: React.FC = () => {
       <Table
         columns={columns}
         dataSource={users}
-        rowKey={(record) => record._id || record.email}
-        loading={loading}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Tổng số ${total} người dùng`,
-        }}
+        rowKey="_id"
+        loading={isLoading}
       />
 
       <Modal
-        title={editingUser ? 'Sửa người dùng' : 'Thêm người dùng'}
+        title={editingUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng'}
         open={modalVisible}
         onOk={handleModalOk}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => {
+          console.log('Modal cancel clicked');
+          setModalVisible(false);
+        }}
+        confirmLoading={createMutation.isPending || updateMutation.isPending}
       >
         <Form form={form} layout="vertical">
           <Form.Item
             name="name"
-            label="Họ tên"
-            rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+            label="Tên"
+            rules={[{ required: true, message: 'Vui lòng nhập tên' }]}
           >
             <Input />
           </Form.Item>
@@ -264,7 +348,7 @@ const UserManagement: React.FC = () => {
               { type: 'email', message: 'Email không hợp lệ' },
             ]}
           >
-            <Input disabled={!!editingUser} />
+            <Input />
           </Form.Item>
           {!editingUser && (
             <Form.Item
@@ -285,45 +369,49 @@ const UserManagement: React.FC = () => {
               <Option value="teacher">Giáo viên</Option>
             </Select>
           </Form.Item>
-          {editingUser && (
-            <Form.Item
-              name="status"
-              label="Trạng thái"
-              rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
-            >
-              <Select>
-                <Option value="active">Hoạt động</Option>
-                <Option value="inactive">Đã khóa</Option>
-              </Select>
-            </Form.Item>
-          )}
+          <Form.Item
+            name="status"
+            label="Trạng thái"
+            rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
+          >
+            <Select>
+              <Option value="active">Hoạt động</Option>
+              <Option value="blocked">Đã khóa</Option>
+            </Select>
+          </Form.Item>
         </Form>
       </Modal>
 
       <Modal
         title="Đặt lại mật khẩu"
         open={resetPasswordModalVisible}
-        onOk={handleResetPassword}
+        onOk={handleResetPasswordSubmit}
         onCancel={() => setResetPasswordModalVisible(false)}
+        confirmLoading={requestPasswordResetMutation.isPending || resetPasswordMutation.isPending}
       >
         <Form form={resetPasswordForm} layout="vertical">
-          <Form.Item
-            name="otp"
-            label="Mã OTP"
-            rules={[{ required: true, message: 'Vui lòng nhập mã OTP' }]}
-          >
-            <Input />
+          <Form.Item label="Phương thức đặt lại mật khẩu">
+            <Select 
+              value={resetPasswordMethod}
+              onChange={(value) => setResetPasswordMethod(value)}
+            >
+              <Option value="email">Gửi email đặt lại mật khẩu</Option>
+              <Option value="manual">Nhập mật khẩu mới</Option>
+            </Select>
           </Form.Item>
-          <Form.Item
-            name="newPassword"
-            label="Mật khẩu mới"
-            rules={[
-              { required: true, message: 'Vui lòng nhập mật khẩu mới' },
-              { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự' },
-            ]}
-          >
-            <Input.Password />
-          </Form.Item>
+
+          {resetPasswordMethod === 'manual' && (
+            <Form.Item
+              name="newPassword"
+              label="Mật khẩu mới"
+              rules={[
+                { required: true, message: 'Vui lòng nhập mật khẩu mới' },
+                { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' }
+              ]}
+            >
+              <Input.Password />
+            </Form.Item>
+          )}
         </Form>
       </Modal>
     </div>

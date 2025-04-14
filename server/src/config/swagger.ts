@@ -37,9 +37,13 @@ const swaggerOptions = {
         User: {
           type: "object",
           properties: {
-            id: {
+            _id: {
               type: "string",
               description: "User ID",
+            },
+            name: {
+              type: "string",
+              description: "User's full name",
             },
             email: {
               type: "string",

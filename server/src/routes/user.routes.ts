@@ -17,10 +17,17 @@ const router = Router();
  *   schemas:
  *     User:
  *       type: object
+ *       required:
+ *         - name
+ *         - email
+ *         - role
  *       properties:
  *         id:
  *           type: string
  *           description: ID của người dùng
+ *         name:
+ *           type: string
+ *           description: Họ tên của người dùng
  *         email:
  *           type: string
  *           format: email
@@ -28,11 +35,12 @@ const router = Router();
  *         role:
  *           type: string
  *           enum: [admin, teacher]
- *           description: Vai trò của người dùng
+ *           description: Vai trò của người dùng (admin - quản trị viên, teacher - giáo viên)
  *         status:
  *           type: string
- *           enum: [active, blocked]
- *           description: Trạng thái tài khoản
+ *           enum: [active, inactive, blocked]
+ *           description: Trạng thái tài khoản (active - hoạt động, inactive - không hoạt động, blocked - bị khóa)
+ *           default: active
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -44,10 +52,14 @@ const router = Router();
  *     CreateUser:
  *       type: object
  *       required:
+ *         - name
  *         - email
  *         - password
  *         - role
  *       properties:
+ *         name:
+ *           type: string
+ *           description: Họ tên của người dùng
  *         email:
  *           type: string
  *           format: email
@@ -55,14 +67,23 @@ const router = Router();
  *         password:
  *           type: string
  *           format: password
- *           description: Mật khẩu của người dùng
+ *           minLength: 6
+ *           description: Mật khẩu của người dùng (tối thiểu 6 ký tự)
  *         role:
  *           type: string
  *           enum: [admin, teacher]
- *           description: Vai trò của người dùng
+ *           description: Vai trò của người dùng (admin - quản trị viên, teacher - giáo viên)
+ *         status:
+ *           type: string
+ *           enum: [active, inactive, blocked]
+ *           description: Trạng thái tài khoản (active - hoạt động, inactive - không hoạt động, blocked - bị khóa)
+ *           default: active
  *     UpdateUser:
  *       type: object
  *       properties:
+ *         name:
+ *           type: string
+ *           description: Họ tên của người dùng
  *         email:
  *           type: string
  *           format: email
@@ -70,15 +91,16 @@ const router = Router();
  *         password:
  *           type: string
  *           format: password
- *           description: Mật khẩu mới của người dùng
+ *           minLength: 6
+ *           description: Mật khẩu mới của người dùng (tối thiểu 6 ký tự)
  *         role:
  *           type: string
  *           enum: [admin, teacher]
- *           description: Vai trò của người dùng
+ *           description: Vai trò của người dùng (admin - quản trị viên, teacher - giáo viên)
  *         status:
  *           type: string
- *           enum: [active, blocked]
- *           description: Trạng thái tài khoản
+ *           enum: [active, inactive, blocked]
+ *           description: Trạng thái tài khoản (active - hoạt động, inactive - không hoạt động, blocked - bị khóa)
  *     Error:
  *       type: object
  *       properties:
@@ -197,10 +219,14 @@ router.get("/:id", authenticateJWT, authorizeRole(["admin"]), getUserById);
  *           schema:
  *             type: object
  *             required:
+ *               - name
  *               - email
  *               - password
  *               - role
  *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Họ tên của người dùng
  *               email:
  *                 type: string
  *                 format: email
@@ -220,6 +246,14 @@ router.get("/:id", authenticateJWT, authorizeRole(["admin"]), getUserById);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
+ *             example:
+ *               id: "string"
+ *               name: "Nguyễn Văn A"
+ *               email: "user@example.com"
+ *               role: "admin"
+ *               status: "active"
+ *               createdAt: "2025-04-12T07:31:10.767Z"
+ *               updatedAt: "2025-04-12T07:31:10.767Z"
  *       400:
  *         description: Dữ liệu không hợp lệ
  *         content:

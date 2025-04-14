@@ -13,14 +13,15 @@ export const login = async (
 
     // Tìm người dùng trong cơ sở dữ liệu
     const user = await User.findOne({ email });
+    console.log('Found user:', user);
     if (!user) {
       res.status(404).json({ message: "Tài khoản không tồn tại" });
       return;
     }
 
     // Kiểm tra trạng thái tài khoản
-    if (user.status === "blocked") {
-      res.status(403).json({ message: "Tài khoản đã bị khóa" });
+    if (user.status === "blocked" || user.status === "inactive") {
+      res.status(403).json({ message: user.status === "blocked" ? "Tài khoản đã bị khóa" : "Tài khoản chưa được kích hoạt" });
       return;
     }
 
@@ -38,17 +39,33 @@ export const login = async (
       { expiresIn: "1h" }
     );
 
-    // Trả về thông tin người dùng và token
-    res.json({
+    console.log('Response data:', {
       token,
       user: {
-        id: user._id,
+        _id: user._id,
+        name: user.name,
         email: user.email,
         role: user.role,
         status: user.status,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       }
+    });
+
+    // Trả về thông tin người dùng và token
+    const userResponse = {
+      _id: user._id,
+      name: user.name || 'Admin',
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+    console.log('User response:', userResponse);
+    res.status(200).json({
+      token,
+      user: userResponse
     });
   } catch (error) {
     next(error);

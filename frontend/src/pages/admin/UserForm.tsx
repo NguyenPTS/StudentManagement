@@ -1,134 +1,145 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import userService, { User, CreateUserDTO, UpdateUserDTO } from '../../services/userService';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, Select, Button, Card, message } from 'antd';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import userService from '../../services/userService';
+import type { User } from '../../services/userService';
 
-interface UserFormProps {
-  user?: User;
-  mode: 'create' | 'edit';
-}
+const { Option } = Select;
 
-interface FormData {
-  name: string;
-  email: string;
-  password: string;
-  role: 'admin' | 'teacher';
-}
-
-const UserForm: React.FC<UserFormProps> = ({ user, mode }) => {
+const UserForm: React.FC = () => {
+  const [form] = Form.useForm();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<FormData>({
-    name: user?.name || '',
-    email: user?.email || '',
-    password: '',
-    role: user?.role || 'teacher',
-  });
-  const [error, setError] = useState<string | null>(null);
+  const { id } = useParams();
+  const location = useLocation();
+  const [loading, setLoading] = useState(false);
+  const [initialValues, setInitialValues] = useState<Partial<User>>({});
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  // Xác định mode từ URL
+  const isEditing = location.pathname.includes('/edit');
+  const mode = isEditing ? 'edit' : 'add';
 
+  useEffect(() => {
+    if (isEditing && id) {
+      console.log('Bắt đầu fetch thông tin user để chỉnh sửa:', id);
+      fetchUser();
+    }
+  }, [id, isEditing]);
+
+  const fetchUser = async () => {
     try {
-      if (mode === 'create') {
-        const createData: CreateUserDTO = {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role,
-        };
-        await userService.create(createData);
-      } else if (user) {
-        const updateData: UpdateUserDTO = {
-          name: formData.name,
-          role: formData.role,
-        };
-        await userService.update(user._id, updateData);
-      }
+      console.log('Đang lấy thông tin user...');
+      const user = await userService.getById(id!);
+      console.log('Đã nhận được thông tin user:', user);
+      setInitialValues(user);
+      form.setFieldsValue({
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      });
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin user:', error);
+      message.error('Không thể tải thông tin người dùng');
       navigate('/admin/users');
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
+    }
+  };
+
+  const handleSubmit = async (values: any) => {
+    try {
+      console.log('Bắt đầu xử lý form:', values);
+      setLoading(true);
+      
+      if (isEditing) {
+        console.log('Đang cập nhật thông tin user:', id);
+        await userService.update(id!, values);
+        console.log('Đã cập nhật thông tin user thành công');
+        message.success('Cập nhật thông tin người dùng thành công');
+      } else {
+        console.log('Đang tạo user mới...');
+        await userService.create(values);
+        console.log('Đã tạo user mới thành công');
+        message.success('Tạo người dùng mới thành công');
+      }
+      
+      navigate('/admin/users');
+    } catch (error) {
+      console.error('Lỗi khi xử lý form:', error);
+      message.error(isEditing ? 'Không thể cập nhật thông tin người dùng' : 'Không thể tạo người dùng mới');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">
-        {mode === 'create' ? 'Create New User' : 'Edit User'}
-      </h1>
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Full Name
-          </label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <input
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            required
-            disabled={mode === 'edit'}
-          />
-        </div>
-        {mode === 'create' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              required
+    <div className="p-6">
+      <Card title={isEditing ? 'Chỉnh sửa thông tin người dùng' : 'Tạo tài khoản mới'}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          initialValues={initialValues}
+        >
+          <Form.Item
+            name="name"
+            label="Họ tên"
+            rules={[
+              { required: true, message: 'Vui lòng nhập họ tên' },
+              { min: 2, message: 'Họ tên phải có ít nhất 2 ký tự' }
+            ]}
+          >
+            <Input placeholder="Nhập họ tên người dùng" />
+          </Form.Item>
+
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: 'Vui lòng nhập email' },
+              { type: 'email', message: 'Email không hợp lệ' }
+            ]}
+          >
+            <Input 
+              placeholder="Nhập địa chỉ email" 
+              disabled={isEditing && initialValues.emailVerified}
             />
-          </div>
-        )}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Role
-          </label>
-          <select
-            value={formData.role}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'teacher' })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          </Form.Item>
+
+          {!isEditing && (
+            <Form.Item
+              name="password"
+              label="Mật khẩu"
+              rules={[
+                { required: true, message: 'Vui lòng nhập mật khẩu' },
+                { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' }
+              ]}
+            >
+              <Input.Password placeholder="Nhập mật khẩu" />
+            </Form.Item>
+          )}
+
+          <Form.Item
+            name="role"
+            label="Vai trò"
+            rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
           >
-            <option value="teacher">Teacher</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <div className="flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={() => navigate('/admin/users')}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-          >
-            {mode === 'create' ? 'Create' : 'Update'}
-          </button>
-        </div>
-      </form>
+            <Select placeholder="Chọn vai trò">
+              <Option value="admin">Quản trị viên</Option>
+              <Option value="teacher">Giáo viên</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              {isEditing ? 'Cập nhật' : 'Tạo tài khoản'}
+            </Button>
+            <Button 
+              className="ml-2" 
+              onClick={() => navigate('/admin/users')}
+            >
+              Hủy
+            </Button>
+          </Form.Item>
+        </Form>
+      </Card>
     </div>
   );
 };

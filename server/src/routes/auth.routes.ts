@@ -120,28 +120,8 @@ router.post("/login", login);
  */
 router.post("/register", register);
 
-/**
- * @swagger
- * /auth/me:
- *   get:
- *     summary: Lấy thông tin người dùng hiện tại
- *     tags: [Authentication]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Thông tin người dùng
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       401:
- *         description: Chưa xác thực
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.get("/me", authenticateJWT, getCurrentUser);
+// Protected routes
+router.use("/me", authenticateJWT);
+router.get("/me", getCurrentUser);
 
 export default router; 

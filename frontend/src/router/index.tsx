@@ -2,11 +2,11 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Suspense } from "react";
 import { authRoutes } from "../routes/auth.routes";
-import { studentRoutes } from "../routes/student.routes";
+
 import adminRoutes from "../routes/admin.routes";
 import { RouteObject } from "react-router-dom";
-
-// import Dashboard from "../pages/Dashboard"; // Tạo sau
+import NotFound from "../pages/NotFound";
+import teacherRoutes from "../routes/teacher.routes";
 
 const AppRouter = () => {
   return (
@@ -14,7 +14,7 @@ const AppRouter = () => {
       <Routes>
         {/* Auth routes */}
         {authRoutes.map((route: RouteObject) => (
-          <Route key={route.path} path={route.path}>
+          <Route key={route.path} path={route.path} element={route.element}>
             {route.children?.map((child: RouteObject) => (
               <Route
                 key={child.path}
@@ -27,16 +27,7 @@ const AppRouter = () => {
 
         {/* Admin routes */}
         {adminRoutes.map((route: RouteObject) => (
-          <Route
-            key={route.path}
-            path={route.path}
-            element={route.element}
-          />
-        ))}
-
-        {/* Student routes */}
-        {studentRoutes.map((route: RouteObject) => (
-          <Route key={route.path} path={route.path}>
+          <Route key={route.path} path={route.path} element={route.element}>
             {route.children?.map((child: RouteObject) => (
               <Route
                 key={child.path}
@@ -47,8 +38,24 @@ const AppRouter = () => {
           </Route>
         ))}
 
-        {/* <Route path="/dashboard" element={<Dashboard />} /> */}
-        <Route path="*" element={<Navigate to="/auth/login" replace />} />
+        {/* teacher routes */}
+        {teacherRoutes.map((route: RouteObject) => (
+          <Route key={route.path} path={route.path} element={route.element}>
+            {route.children?.map((child: RouteObject) => (
+              <Route
+                key={child.path}
+                path={child.path}
+                element={child.element}
+              />
+            ))}
+          </Route>
+        ))}
+
+        {/* Route mặc định */}
+        <Route path="/" element={<Navigate to="/auth/login" replace />} />
+
+        {/* Xử lý route không tồn tại */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

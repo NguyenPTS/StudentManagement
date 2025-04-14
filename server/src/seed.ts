@@ -9,6 +9,7 @@ async function main() {
     where: { email: "admin@example.com" },
     update: {},
     create: {
+      name: "Admin",
       email: "admin@example.com",
       password: await bcrypt.hash("admin123", 10),
       role: "admin",
@@ -21,6 +22,7 @@ async function main() {
     where: { email: "teacher@example.com" },
     update: {},
     create: {
+      name: "Teacher",
       email: "teacher@example.com",
       password: await bcrypt.hash("teacher123", 10),
       role: "teacher",

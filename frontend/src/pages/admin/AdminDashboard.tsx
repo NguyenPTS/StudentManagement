@@ -1,195 +1,150 @@
-import React, { useState } from 'react';
-import { Layout, Menu, Card, Row, Col, Statistic, Table, Button, Avatar, Dropdown } from 'antd';
-import {
-  UserOutlined,
-  BookOutlined,
-  SettingOutlined,
-  DashboardOutlined,
-  TeamOutlined,
-  LogoutOutlined,
-  BellOutlined,
-} from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-
-const { Header, Sider, Content } = Layout;
+import React, { useState, useEffect } from "react";
+import { Card, Row, Col, Statistic, Table, Button, Space } from "antd";
+import { UserOutlined, TeamOutlined } from "@ant-design/icons";
+import { Link, useNavigate } from "react-router-dom";
+import userService from "../../services/userService";
+import { User } from "../../services/userService";
 
 const AdminDashboard: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalTeachers: 0,
+    recentUsers: [] as User[],
+  });
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
 
-  const menuItems = [
-    {
-      key: 'dashboard',
-      icon: <DashboardOutlined />,
-      label: 'Tổng quan',
-    },
-    {
-      key: 'students',
-      icon: <UserOutlined />,
-      label: 'Quản lý sinh viên',
-    },
-    {
-      key: 'teachers',
-      icon: <TeamOutlined />,
-      label: 'Quản lý giáo viên',
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Cài đặt',
-    },
-  ];
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
 
-  const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: 'Hồ sơ',
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Cài đặt',
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: 'Đăng xuất',
-    },
-  ];
+      // Fetch users
+      const users = await userService.getAll();
+      const teachers = users.filter((user) => user.role === "teacher");
 
-  const handleMenuClick = (key: string) => {
-    switch (key) {
-      case 'dashboard':
-        navigate('/admin');
-        break;
-      case 'students':
-        navigate('/admin/students');
-        break;
-      case 'teachers':
-        navigate('/admin/teachers');
-        break;
-      case 'settings':
-        navigate('/admin/settings');
-        break;
-      default:
-        break;
+      // Get recent users (last 5)
+      const recentUsers = users.slice(0, 5);
+
+      setStats({
+        totalUsers: users.length,
+        totalTeachers: teachers.length,
+        recentUsers,
+      });
+    } catch (error: any) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
-        <div className="p-4 h-16 flex items-center justify-center">
-          <h1 className="text-white text-xl font-bold">Admin Panel</h1>
-        </div>
-        <Menu
-          theme="dark"
-          defaultSelectedKeys={['dashboard']}
-          mode="inline"
-          items={menuItems}
-          onClick={({ key }) => handleMenuClick(key)}
-        />
-      </Sider>
-      <Layout>
-        <Header className="bg-white px-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <BellOutlined className="text-xl mr-4" />
-            <h2 className="text-lg font-semibold">Tổng quan hệ thống</h2>
-          </div>
-          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-            <div className="flex items-center cursor-pointer">
-              <Avatar icon={<UserOutlined />} />
-              <span className="ml-2">Admin</span>
-            </div>
-          </Dropdown>
-        </Header>
-        <Content className="m-6">
-          <Row gutter={[16, 16]}>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Tổng số sinh viên"
-                  value={1234}
-                  prefix={<UserOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Tổng số giáo viên"
-                  value={56}
-                  prefix={<TeamOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Lớp học"
-                  value={45}
-                  prefix={<BookOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="Sinh viên mới"
-                  value={89}
-                  prefix={<UserOutlined />}
-                />
-              </Card>
-            </Col>
-          </Row>
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-          <Card title="Hoạt động gần đây" className="mt-6">
-            <Table
-              columns={[
-                {
-                  title: 'Thời gian',
-                  dataIndex: 'time',
-                  key: 'time',
-                },
-                {
-                  title: 'Người dùng',
-                  dataIndex: 'user',
-                  key: 'user',
-                },
-                {
-                  title: 'Hành động',
-                  dataIndex: 'action',
-                  key: 'action',
-                },
-                {
-                  title: 'Chi tiết',
-                  dataIndex: 'details',
-                  key: 'details',
-                },
-              ]}
-              dataSource={[
-                {
-                  key: '1',
-                  time: '10:30',
-                  user: 'Nguyễn Văn A',
-                  action: 'Thêm sinh viên mới',
-                  details: 'Thêm sinh viên: Trần Thị B',
-                },
-                {
-                  key: '2',
-                  time: '09:15',
-                  user: 'Trần Văn C',
-                  action: 'Cập nhật thông tin',
-                  details: 'Cập nhật thông tin lớp: Lớp A1',
-                },
-              ]}
+  const recentUsersColumns = [
+    {
+      title: "Tên",
+      dataIndex: "name",
+      key: "name",
+    },
+    {
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+    },
+    {
+      title: "Vai trò",
+      dataIndex: "role",
+      key: "role",
+      render: (role: string) =>
+        role === "admin" ? "Quản trị viên" : "Giáo viên",
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      render: (status: string) => (
+        <span
+          className={status === "active" ? "text-green-600" : "text-red-600"}
+        >
+          {status === "active" ? "Hoạt động" : "Đã khóa"}
+        </span>
+      ),
+    },
+    {
+      title: "Thao tác",
+      key: "action",
+      render: (_: any, record: User) => (
+        <Space>
+          <Button
+            type="link"
+            onClick={() => navigate(`/admin/users/${record._id}/edit`)}
+          >
+            Chỉnh sửa
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Quản lý người dùng</h1>
+        <Space>
+          <Button type="primary" onClick={() => navigate("/admin/users")}>
+            Quản lý người dùng
+          </Button>
+          <Button
+            type="primary"
+            onClick={() => navigate("/admin/users/create")}
+          >
+            Thêm người dùng mới
+          </Button>
+        </Space>
+      </div>
+
+      <Row gutter={[16, 16]} className="mb-6">
+        <Col span={12}>
+          <Card>
+            <Statistic
+              title="Tổng số người dùng"
+              value={stats.totalUsers}
+              prefix={<UserOutlined />}
+              loading={loading}
             />
           </Card>
-        </Content>
-      </Layout>
-    </Layout>
+        </Col>
+        <Col span={12}>
+          <Card>
+            <Statistic
+              title="Tổng số giáo viên"
+              value={stats.totalTeachers}
+              prefix={<TeamOutlined />}
+              loading={loading}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Card
+        title="Người dùng gần đây"
+        loading={loading}
+        extra={
+          <Button type="link" onClick={() => navigate("/admin/users")}>
+            Xem tất cả
+          </Button>
+        }
+      >
+        <Table
+          columns={recentUsersColumns}
+          dataSource={stats.recentUsers}
+          rowKey="_id"
+          pagination={false}
+        />
+      </Card>
+    </div>
   );
 };
 
-export default AdminDashboard; 
+export default AdminDashboard;

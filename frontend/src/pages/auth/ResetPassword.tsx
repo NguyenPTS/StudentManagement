@@ -88,45 +88,26 @@ const ResetPassword: React.FC = () => {
 
     try {
       setLoading(true);
-      await userService.verifyOTP(email, otp);
+      await userService.verifyEmail(otp);
       setSuccess('Xác thực OTP thành công');
       setStep('password');
     } catch (error: any) {
-      setError(error.message || 'Mã OTP không hợp lệ');
+      setError(error.response?.data?.message || 'Mã OTP không hợp lệ hoặc đã hết hạn');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (!validatePassword(newPassword)) {
-      setError('Mật khẩu phải có ít nhất 8 ký tự');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp');
-      return;
-    }
-
-    if (passwordStrength === 'weak') {
-      setError('Mật khẩu quá yếu. Vui lòng sử dụng mật khẩu mạnh hơn');
-      return;
-    }
-
+  const handleResetPassword = async () => {
     try {
       setLoading(true);
-      await userService.resetPassword({ email, otp, newPassword });
+      await userService.resetUserPassword({ email, otp, newPassword });
       setSuccess('Đặt lại mật khẩu thành công');
       setTimeout(() => {
         navigate('/login');
       }, 2000);
     } catch (error: any) {
-      setError(error.message || 'Không thể đặt lại mật khẩu');
+      setError(error.response?.data?.message || 'Có lỗi xảy ra');
     } finally {
       setLoading(false);
     }

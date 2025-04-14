@@ -11,6 +11,10 @@ import { authorizeTeacher } from "../middlewares/role.middleware";
 
 const router = Router();
 
+// Apply authentication middleware to all routes
+router.use(authenticateJWT);
+router.use(authorizeTeacher);
+
 /**
  * @swagger
  * tags:
@@ -60,7 +64,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/", authenticateJWT, authorizeTeacher, getStudents);
+router.get("/", getStudents);
 
 /**
  * @swagger
@@ -103,7 +107,7 @@ router.get("/", authenticateJWT, authorizeTeacher, getStudents);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/:id", authenticateJWT, authorizeTeacher, getStudentById);
+router.get("/:id", getStudentById);
 
 /**
  * @swagger
@@ -170,7 +174,7 @@ router.get("/:id", authenticateJWT, authorizeTeacher, getStudentById);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/", authenticateJWT, authorizeTeacher, createStudent);
+router.post("/", createStudent);
 
 /**
  * @swagger
@@ -246,7 +250,7 @@ router.post("/", authenticateJWT, authorizeTeacher, createStudent);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put("/:id", authenticateJWT, authorizeTeacher, updateStudent);
+router.put("/:id", updateStudent);
 
 /**
  * @swagger
@@ -293,6 +297,6 @@ router.put("/:id", authenticateJWT, authorizeTeacher, updateStudent);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete("/:id", authenticateJWT, authorizeTeacher, deleteStudent);
+router.delete("/:id", deleteStudent);
 
 export default router;

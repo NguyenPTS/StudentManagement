@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Form, Input, Button, DatePicker, message } from "antd";
 import studentService from "../../services/studentService";
-import type { Student, CreateStudentDTO, UpdateStudentDTO } from "../../services/studentService";
+import type { Student, CreateStudentDTO, UpdateStudentDTO } from "../../types/student";
+import dayjs from "dayjs";
 
 const StudentForm = () => {
   const { id } = useParams();
@@ -16,7 +17,7 @@ const StudentForm = () => {
     email: "",
     phone: "",
     address: "",
-    dateOfBirth: "",
+    dob: "",
     status: "active",
     mssv: "",
     class: "",
@@ -32,18 +33,18 @@ const StudentForm = () => {
 
   const loadStudent = async () => {
     if (!id) return;
-    
+
     try {
-      console.log('Loading student with ID:', id);
+      console.log("Loading student with ID:", id);
       const student = await studentService.getById(id);
-      console.log('Raw student data:', student);
-      
+      console.log("Raw student data:", student);
+
       if (!student) {
-        throw new Error('Không tìm thấy thông tin sinh viên');
+        throw new Error("Không tìm thấy thông tin sinh viên");
       }
 
       // Log each field for debugging
-      console.log('Student fields:', {
+      console.log("Student fields:", {
         name: student.name,
         email: student.email,
         phone: student.phone,
@@ -51,46 +52,50 @@ const StudentForm = () => {
         dob: student.dob,
         status: student.status,
         mssv: student.mssv,
-        class: student.class
+        class: student.class,
       });
 
       // Format the data before setting in form
       const formattedData = {
-        name: student.name || '',
-        email: student.email || '',
-        phone: student.phone || '',
-        address: student.address || '',
-        dateOfBirth: student.dob ? new Date(student.dob).toISOString().split('T')[0] : '', // Map dob to dateOfBirth
-        status: student.status || 'active',
-        mssv: student.mssv || '',
-        class: student.class || ''
+        name: student.name || "",
+        email: student.email || "",
+        phone: student.phone || "",
+        address: student.address || "",
+        dob: student.dob ? new Date(student.dob).toISOString().split("T")[0] : "",
+        status: student.status || "active",
+        mssv: student.mssv || "",
+        class: student.class || "",
       };
 
-      console.log('Formatted data for form:', formattedData);
+      console.log("Formatted data for form:", formattedData);
       setFormData(formattedData);
     } catch (error: any) {
-      console.error('Error loading student:', error);
-      message.error(error.response?.data?.message || 'Không thể tải thông tin sinh viên');
+      console.error("Error loading student:", error);
+      message.error(
+        error.response?.data?.message || "Không thể tải thông tin sinh viên"
+      );
     }
   };
 
   const validateField = (name: string, value: string | undefined) => {
     if (!value) return "Trường này là bắt buộc";
-    
+
     switch (name) {
       case "name":
         return !value.trim() ? "Vui lòng nhập họ tên sinh viên" : "";
       case "email":
         if (!value.trim()) return "Vui lòng nhập email sinh viên";
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Email không hợp lệ";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+          return "Email không hợp lệ";
         return "";
       case "phone":
         if (!value.trim()) return "Vui lòng nhập số điện thoại sinh viên";
-        if (!/^[0-9]{10}$/.test(value)) return "Số điện thoại phải có 10 chữ số";
+        if (!/^[0-9]{10}$/.test(value))
+          return "Số điện thoại phải có 10 chữ số";
         return "";
       case "address":
         return !value.trim() ? "Vui lòng nhập địa chỉ sinh viên" : "";
-      case "dateOfBirth":
+      case "dob":
         return !value ? "Vui lòng chọn ngày sinh sinh viên" : "";
       default:
         return "";
@@ -98,21 +103,23 @@ const StudentForm = () => {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-    
+
     // Validate field on change
     const error = validateField(name, value);
     setFieldErrors((prev) => ({
       ...prev,
       [name]: error,
     }));
-    
+
     // Clear global error when user starts typing
     if (error) setError("");
   };
@@ -142,37 +149,38 @@ const StudentForm = () => {
     setSuccess("");
 
     try {
-      // Log form data before submission
-      console.log('Submitting form data:', {
+      const submitData: CreateStudentDTO = {
         ...formData,
-        dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth).toISOString() : null
-      });
+        dob: formData.dob,
+      };
+
+      console.log("Submitting form data:", submitData);
 
       if (id) {
-        await studentService.update(id, formData);
+        await studentService.update(id, submitData);
         setSuccess("Cập nhật sinh viên thành công");
       } else {
-        const response = await studentService.create(formData);
-        console.log('Create response:', response);
+        const response = await studentService.create(submitData);
+        console.log("Create response:", response);
         setSuccess("Thêm sinh viên thành công");
       }
 
       setTimeout(() => {
-        navigate("/student/list");
+        navigate("/teacher");
       }, 1500);
     } catch (err: any) {
-      console.error('Form submission error:', {
+      console.error("Form submission error:", {
         message: err.message,
         response: err.response?.data,
         status: err.response?.status,
-        data: formData
+        data: formData,
       });
-      
+
       setError(
-        err.response?.data?.message || 
-        (id
-          ? "Không thể cập nhật sinh viên. Vui lòng thử lại sau."
-          : "Không thể thêm sinh viên. Vui lòng thử lại sau.")
+        err.response?.data?.message ||
+          (id
+            ? "Không thể cập nhật sinh viên. Vui lòng thử lại sau."
+            : "Không thể thêm sinh viên. Vui lòng thử lại sau.")
       );
     } finally {
       setLoading(false);
@@ -201,7 +209,7 @@ const StudentForm = () => {
               {id ? "Cập nhật sinh viên" : "Thêm sinh viên mới"}
             </h1>
             <Button
-              onClick={() => navigate("/student/list")}
+              onClick={() => navigate("/teacher")}
               className="bg-gray-100 text-gray-700 hover:bg-gray-200"
             >
               Quay lại
@@ -216,8 +224,16 @@ const StudentForm = () => {
             >
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div className="ml-3">
@@ -235,8 +251,16 @@ const StudentForm = () => {
             >
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5 text-green-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div className="ml-3">
@@ -249,7 +273,10 @@ const StudentForm = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Họ và tên <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -267,12 +294,17 @@ const StudentForm = () => {
                   }`}
                 />
                 {fieldErrors.name && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.name}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {fieldErrors.name}
+                  </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -290,12 +322,17 @@ const StudentForm = () => {
                   }`}
                 />
                 {fieldErrors.email && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {fieldErrors.email}
+                  </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Số điện thoại <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -314,34 +351,47 @@ const StudentForm = () => {
                   }`}
                 />
                 {fieldErrors.phone && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.phone}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {fieldErrors.phone}
+                  </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="dob"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Ngày sinh <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  id="dateOfBirth"
-                  name="dateOfBirth"
-                  value={formData.dateOfBirth}
-                  onChange={handleChange}
-                  required
+                <DatePicker
+                  id="dob"
+                  name="dob"
+                  value={formData.dob ? dayjs(formData.dob) : null}
+                  onChange={(date) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      dob: date ? date.format('YYYY-MM-DD') : '',
+                    }));
+                  }}
                   className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
-                    fieldErrors.dateOfBirth
+                    fieldErrors.dob
                       ? "border-red-300 focus:border-red-500 focus:ring-red-500"
                       : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                   }`}
                 />
-                {fieldErrors.dateOfBirth && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.dateOfBirth}</p>
+                {fieldErrors.dob && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {fieldErrors.dob}
+                  </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="mssv" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="mssv"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Mã số sinh viên
                 </label>
                 <input
@@ -356,7 +406,10 @@ const StudentForm = () => {
               </div>
 
               <div>
-                <label htmlFor="class" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="class"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Lớp
                 </label>
                 <input
@@ -371,7 +424,10 @@ const StudentForm = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="address"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Địa chỉ <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -389,7 +445,9 @@ const StudentForm = () => {
                   }`}
                 />
                 {fieldErrors.address && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.address}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {fieldErrors.address}
+                  </p>
                 )}
               </div>
 
@@ -411,9 +469,7 @@ const StudentForm = () => {
             </div>
 
             <div className="flex justify-end space-x-4 mt-6">
-              <Button onClick={() => navigate("/student/list")}>
-                Hủy
-              </Button>
+              <Button onClick={() => navigate("/student/list")}>Hủy</Button>
               <Button type="primary" onClick={handleSubmit}>
                 {id ? "Cập nhật" : "Tạo mới"}
               </Button>

@@ -2,14 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 
-interface FormData {
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
-
 const Register = () => {
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     email: "",
     password: "",
     confirmPassword: "",
@@ -19,7 +13,7 @@ const Register = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: FormData) => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -129,16 +123,16 @@ const Register = () => {
               Đăng ký
             </Button>
           </div>
-
-          <div className="text-sm text-center">
-            <Link
-              to="/auth/login"
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              Đã có tài khoản? Đăng nhập
-            </Link>
-          </div>
         </form>
+
+        <div className="text-sm text-center">
+          <Link
+            to="/auth/login"
+            className="font-medium text-blue-600 hover:text-blue-500"
+          >
+            Đã có tài khoản? Đăng nhập
+          </Link>
+        </div>
       </div>
     </div>
   );
