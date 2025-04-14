@@ -12,7 +12,16 @@ export interface Student {
   createdAt: string;
   updatedAt: string;
   mssv?: string;
-  class?: string;
+  classId?: string;
+  teacherId?: string;
+  class?: {
+    id: string;
+    name: string;
+  };
+  teacher?: {
+    id: string;
+    name: string;
+  };
 }
 
 export type CreateStudentDTO = Omit<Student, 'id' | 'createdAt' | 'updatedAt'>;

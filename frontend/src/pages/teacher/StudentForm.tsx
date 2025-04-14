@@ -3,8 +3,49 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Form, Input, Button, DatePicker, message } from "antd";
 import studentService from "../../services/studentService";
-import type { Student, CreateStudentDTO, UpdateStudentDTO } from "../../types/student";
 import dayjs from "dayjs";
+
+interface ClassType {
+  id: string;
+  name: string;
+}
+
+interface StudentType {
+  id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  dob: string;
+  status: 'active' | 'inactive' | 'graduated';
+  mssv: string;
+  class?: ClassType;
+}
+
+interface FormData {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  dob: string;
+  status: 'active' | 'inactive' | 'graduated';
+  mssv: string;
+  class: ClassType;
+}
+
+const initialFormData: FormData = {
+  name: "",
+  email: "",
+  phone: "",
+  address: "",
+  dob: "",
+  status: "active",
+  mssv: "",
+  class: {
+    id: "",
+    name: ""
+  }
+};
 
 const StudentForm = () => {
   const { id } = useParams();
@@ -12,16 +53,8 @@ const StudentForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [formData, setFormData] = useState<CreateStudentDTO>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    dob: "",
-    status: "active",
-    mssv: "",
-    class: "",
-  });
+  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [student, setStudent] = useState<StudentType | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -31,49 +64,46 @@ const StudentForm = () => {
     }
   }, [id]);
 
-  const loadStudent = async () => {
-    if (!id) return;
-
-    try {
-      console.log("Loading student with ID:", id);
-      const student = await studentService.getById(id);
-      console.log("Raw student data:", student);
-
-      if (!student) {
-        throw new Error("Không tìm thấy thông tin sinh viên");
-      }
-
-      // Log each field for debugging
-      console.log("Student fields:", {
-        name: student.name,
-        email: student.email,
-        phone: student.phone,
-        address: student.address,
-        dob: student.dob,
-        status: student.status,
-        mssv: student.mssv,
-        class: student.class,
-      });
-
-      // Format the data before setting in form
-      const formattedData = {
+  useEffect(() => {
+    if (student) {
+      setFormData({
         name: student.name || "",
         email: student.email || "",
         phone: student.phone || "",
         address: student.address || "",
-        dob: student.dob ? new Date(student.dob).toISOString().split("T")[0] : "",
+        dob: student.dob || "",
         status: student.status || "active",
         mssv: student.mssv || "",
-        class: student.class || "",
+        class: student.class || { id: "", name: "" }
+      });
+    }
+  }, [student]);
+
+  const loadStudent = async () => {
+    if (!id) return;
+
+    try {
+      const loadedStudent = await studentService.getById(id);
+      if (!loadedStudent) {
+        throw new Error("Không tìm thấy thông tin sinh viên");
+      }
+
+      const formattedData: FormData = {
+        name: loadedStudent.name || "",
+        email: loadedStudent.email || "",
+        phone: loadedStudent.phone || "",
+        address: loadedStudent.address || "",
+        dob: loadedStudent.dob ? new Date(loadedStudent.dob).toISOString().split("T")[0] : "",
+        status: loadedStudent.status || "active",
+        mssv: loadedStudent.mssv || "",
+        class: loadedStudent.class || { id: "", name: "" }
       };
 
-      console.log("Formatted data for form:", formattedData);
+      setStudent(loadedStudent as StudentType);
       setFormData(formattedData);
     } catch (error: any) {
       console.error("Error loading student:", error);
-      message.error(
-        error.response?.data?.message || "Không thể tải thông tin sinh viên"
-      );
+      message.error(error.response?.data?.message || "Không thể tải thông tin sinh viên");
     }
   };
 
@@ -108,10 +138,20 @@ const StudentForm = () => {
     >
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    if (name === 'class') {
+      setFormData(prev => ({
+        ...prev,
+        class: {
+          ...prev.class,
+          name: value
+        }
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
 
     // Validate field on change
     const error = validateField(name, value);
@@ -125,63 +165,42 @@ const StudentForm = () => {
   };
 
   const validateForm = () => {
-    const errors: Record<string, string> = {};
-    let isValid = true;
-
-    Object.keys(formData).forEach((key) => {
-      const error = validateField(key, formData[key as keyof CreateStudentDTO]);
-      if (error) {
-        errors[key] = error;
-        isValid = false;
-      }
-    });
-
-    setFieldErrors(errors);
-    return isValid;
+    const newErrors: Record<string, string> = {};
+    if (!formData.name) newErrors.name = "Vui lòng nhập tên sinh viên";
+    if (!formData.email) newErrors.email = "Vui lòng nhập email";
+    if (!formData.phone) newErrors.phone = "Vui lòng nhập số điện thoại";
+    if (!formData.address) newErrors.address = "Vui lòng nhập địa chỉ";
+    if (!formData.dob) newErrors.dob = "Vui lòng nhập ngày sinh";
+    if (!formData.mssv) newErrors.mssv = "Vui lòng nhập mã số sinh viên";
+    if (!formData.class.name) newErrors.class = "Vui lòng nhập tên lớp";
+    return newErrors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      return;
+    }
 
     setLoading(true);
-    setError("");
-    setSuccess("");
-
     try {
-      const submitData: CreateStudentDTO = {
+      const studentData: StudentType = {
         ...formData,
-        dob: formData.dob,
+        class: formData.class.id ? formData.class : undefined
       };
 
-      console.log("Submitting form data:", submitData);
-
       if (id) {
-        await studentService.update(id, submitData);
-        setSuccess("Cập nhật sinh viên thành công");
+        await studentService.update(id, studentData);
+        message.success("Cập nhật sinh viên thành công");
       } else {
-        const response = await studentService.create(submitData);
-        console.log("Create response:", response);
-        setSuccess("Thêm sinh viên thành công");
+        await studentService.create(studentData);
+        message.success("Thêm sinh viên thành công");
       }
-
-      setTimeout(() => {
-        navigate("/teacher");
-      }, 1500);
-    } catch (err: any) {
-      console.error("Form submission error:", {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status,
-        data: formData,
-      });
-
-      setError(
-        err.response?.data?.message ||
-          (id
-            ? "Không thể cập nhật sinh viên. Vui lòng thử lại sau."
-            : "Không thể thêm sinh viên. Vui lòng thử lại sau.")
-      );
+      navigate(-1);
+    } catch (error) {
+      message.error("Có lỗi xảy ra khi lưu sinh viên");
     } finally {
       setLoading(false);
     }
@@ -416,7 +435,7 @@ const StudentForm = () => {
                   type="text"
                   id="class"
                   name="class"
-                  value={formData.class}
+                  value={formData.class.name}
                   onChange={handleChange}
                   placeholder="Nhập tên lớp"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"

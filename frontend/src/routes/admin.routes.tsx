@@ -3,7 +3,8 @@ import PrivateRoute from "../routes/PrivateRoute";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import UserList from "../pages/admin/UserList";
 import UserForm from "../pages/admin/UserForm";
-
+import StudentList from "../pages/teacher/StudentList";
+import StudentForm from "../pages/admin/StudentForm";
 const adminRoutes: RouteObject[] = [
   {
     path: "/admin",
@@ -34,6 +35,31 @@ const adminRoutes: RouteObject[] = [
     element: (
       <PrivateRoute roles={["admin"]}>
         <UserForm />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/admin/students",
+    element: (
+      <PrivateRoute roles={["admin"]}>
+        <StudentList />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/admin/students/create",
+    element: (
+      <PrivateRoute roles={["admin"]}>
+        <StudentForm />
+      </PrivateRoute>
+    ),
+  },
+
+  {
+    path: "/admin/students/:id/edit",
+    element: (
+      <PrivateRoute roles={["admin"]}>
+        <StudentForm />
       </PrivateRoute>
     ),
   },
