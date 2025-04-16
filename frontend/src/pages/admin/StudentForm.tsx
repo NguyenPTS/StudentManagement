@@ -1,4 +1,4 @@
-import { Form, Input, Select, Button, message } from "antd";
+import { Form, Input, Button, message } from "antd";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import studentService from "../../services/studentService";
 import classService from "../../services/classService";
 import teacherService from "../../services/teacherService";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -46,12 +47,12 @@ const StudentForm = () => {
   const { control, handleSubmit, formState: { errors } } = useForm<StudentFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      email: "",
+    name: "",
+    email: "",
       password: "",
-      phone: "",
-      address: "",
-      status: "active",
+    phone: "",
+    address: "",
+    status: "active",
     },
   });
 
@@ -97,7 +98,7 @@ const StudentForm = () => {
         rules={[{ required: true, message: "Please input student name!" }]}
       >
         <Controller
-          name="name"
+                  name="name"
           control={control}
           render={({ field }) => <Input {...field} />}
         />
@@ -112,7 +113,7 @@ const StudentForm = () => {
         ]}
       >
         <Controller
-          name="email"
+                  name="email"
           control={control}
           render={({ field }) => <Input {...field} />}
         />
@@ -162,12 +163,17 @@ const StudentForm = () => {
           name="classId"
           control={control}
           render={({ field }) => (
-            <Select {...field} placeholder="Select a class">
-              {classes.map((cls) => (
-                <Select.Option key={cls.id} value={cls.id}>
-                  {cls.name}
-                </Select.Option>
-              ))}
+            <Select onValueChange={field.onChange} value={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a class" />
+              </SelectTrigger>
+              <SelectContent>
+                {classes.map((cls) => (
+                  <SelectItem key={cls.id} value={cls.id}>
+                    {cls.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           )}
         />
@@ -181,12 +187,17 @@ const StudentForm = () => {
           name="teacherId"
           control={control}
           render={({ field }) => (
-            <Select {...field} placeholder="Select a teacher">
-              {teachers.map((teacher) => (
-                <Select.Option key={teacher._id} value={teacher._id}>
-                  {teacher.name}
-                </Select.Option>
-              ))}
+            <Select onValueChange={field.onChange} value={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a teacher" />
+              </SelectTrigger>
+              <SelectContent>
+                {teachers.map((teacher) => (
+                  <SelectItem key={teacher._id} value={teacher._id}>
+                    {teacher.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           )}
         />
@@ -194,16 +205,21 @@ const StudentForm = () => {
 
       <Form.Item
         label="Status"
-        name="status"
+                  name="status"
         rules={[{ required: true, message: "Please select status!" }]}
       >
         <Controller
           name="status"
           control={control}
           render={({ field }) => (
-            <Select {...field}>
-              <Select.Option value="active">Active</Select.Option>
-              <Select.Option value="inactive">Inactive</Select.Option>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
             </Select>
           )}
         />
@@ -212,7 +228,7 @@ const StudentForm = () => {
       <Form.Item>
         <Button type="primary" htmlType="submit" loading={loading} block>
           Create Student
-        </Button>
+              </Button>
       </Form.Item>
     </Form>
   );

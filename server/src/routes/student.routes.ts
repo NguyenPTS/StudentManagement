@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { authenticateJWT } from "../middlewares/auth.middleware";
+import { authorizeAdminOrTeacher } from "../middlewares/role.middleware";
 import {
   getStudents,
   getStudentById,
@@ -6,14 +8,14 @@ import {
   updateStudent,
   deleteStudent,
 } from "../controllers/student.controller";
-import { authenticateJWT } from "../middlewares/auth.middleware";
-import { authorizeTeacher } from "../middlewares/role.middleware";
 
 const router = Router();
 
 // Apply authentication middleware to all routes
 router.use(authenticateJWT);
-router.use(authorizeTeacher);
+
+// Apply admin/teacher authorization middleware to all routes
+router.use(authorizeAdminOrTeacher);
 
 /**
  * @swagger

@@ -1,73 +1,69 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { Avatar, Dropdown, Menu } from "antd";
+import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/auth/login");
-  };
+  const userMenuItems = [
+    {
+      key: "profile",
+      icon: <UserOutlined />,
+      label: "Hồ sơ",
+    },
+    {
+      key: "logout",
+      icon: <LogoutOutlined />,
+      label: "Đăng xuất",
+      onClick: () => {
+        logout();
+        navigate("/auth/login");
+      },
+    },
+  ];
 
   return (
-    <header className="bg-white shadow-md">
-      <nav className="container mx-auto px-4 py-3">
-        <div className="flex justify-between items-center">
+    <header className="bg-white shadow-sm">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <img 
-              src="/images/japan-flag.svg" 
-              alt="Japanese Flag" 
-              className="h-8 w-auto"
-            />
-            <span className="text-xl font-bold text-gray-800">
-              Japanese
-            </span>
+          <Link to="" className="text-xl font-bold text-gray-800">
+            Student Management
           </Link>
 
-          {/* User Menu */}
-          {user && (
-            <div className="relative">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="flex items-center space-x-2 focus:outline-none"
-              >
-                <span className="text-gray-600">{user.name}</span>
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-
-              {/* Dropdown Menu */}
-              {isMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1">
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Đăng xuất
-                  </button>
+          {/* Navigation */}
+          <div className="flex items-center space-x-4">
+            {isAuthenticated ? (
+              <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+                <div className="flex items-center cursor-pointer">
+                  <Avatar icon={<UserOutlined />} />
+                  <span className="ml-2 text-gray-700">{user?.name}</span>
                 </div>
-              )}
-            </div>
-          )}
+              </Dropdown>
+            ) : (
+              <>
+                <Link
+                  to="/auth/login"
+                  className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Đăng nhập
+                </Link>
+                <Link
+                  to="/auth/register"
+                  className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Đăng ký
+                </Link>
+              </>
+            )}
+          </div>
         </div>
-      </nav>
+      </div>
     </header>
   );
 };
 
-export default Header; 
+export default Header;

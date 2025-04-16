@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, Row, Col, Statistic, Table, Button, Space } from "antd";
-import { UserOutlined, TeamOutlined } from "@ant-design/icons";
+import { UserOutlined, TeamOutlined, BookOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import userService from "../../services/userService";
 import { User } from "../../services/userService";
@@ -95,6 +95,9 @@ const AdminDashboard: React.FC = () => {
           <Button type="primary" onClick={() => navigate("/admin/users")}>
             Quản lý người dùng
           </Button>
+          <Button type="primary" onClick={() => navigate("/admin/students")}>
+            Quản lý sinh viên
+          </Button>
           <Button
             type="primary"
             onClick={() => navigate("/admin/users/create")}
@@ -105,7 +108,7 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       <Row gutter={[16, 16]} className="mb-6">
-        <Col span={12}>
+        <Col span={8}>
           <Card>
             <Statistic
               title="Tổng số người dùng"
@@ -115,7 +118,7 @@ const AdminDashboard: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={12}>
+        <Col span={8}>
           <Card>
             <Statistic
               title="Tổng số giáo viên"
@@ -123,6 +126,22 @@ const AdminDashboard: React.FC = () => {
               prefix={<TeamOutlined />}
               loading={loading}
             />
+          </Card>
+        </Col>
+        <Col span={8}>
+          <Card>
+            <div 
+              onClick={() => navigate("/admin/students")}
+              style={{ cursor: 'pointer' }}
+            >
+              <Statistic
+                title="Quản lý sinh viên"
+                value="Xem danh sách"
+                prefix={<BookOutlined />}
+                loading={loading}
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </div>
           </Card>
         </Col>
       </Row>

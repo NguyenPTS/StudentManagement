@@ -37,6 +37,13 @@ export interface LoginDTO {
   password: string;
 }
 
+export interface RegisterDTO {
+  name: string;
+  email: string;
+  password: string;
+  role: 'teacher';
+}
+
 export interface ResetPasswordDTO {
   email: string;
   otp: string;
@@ -46,6 +53,11 @@ export interface ResetPasswordDTO {
 const userService = {
   login: async (data: LoginDTO): Promise<{ token: string; user: User }> => {
     const response = await axiosInstance.post<{ token: string; user: User }>('/auth/login', data);
+    return response.data;
+  },
+
+  register: async (data: RegisterDTO): Promise<{ message: string }> => {
+    const response = await axiosInstance.post<{ message: string }>('/auth/register', data);
     return response.data;
   },
 

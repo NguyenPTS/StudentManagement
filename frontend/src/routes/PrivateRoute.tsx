@@ -1,5 +1,6 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import Loading from "../components/Loading";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -12,22 +13,40 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, roles }) => {
   const userStatus = localStorage.getItem("userStatus");
   const location = useLocation();
 
+  // Show loading while checking authentication
   if (!token || !userRole || userStatus === "inactive" || userStatus === "blocked") {
-    return <Navigate to="/auth/login" replace />;
+    return (
+      <Suspense fallback={<Loading />}>
+        <Navigate 
+          to="/auth/login" 
+          replace 
+          state={{ from: location.pathname }}
+        />
+      </Suspense>
+    );
   }
 
+  // Check role authorization
   if (roles && !roles.includes(userRole)) {
     // Redirect to appropriate dashboard based on role
-    if (userRole === "admin") {
-      return <Navigate to="/admin" replace />;
-    } else if (userRole === "teacher") {
-      return <Navigate to="/teacher" replace />;
-    } else {
-      return <Navigate to="/auth/login" replace />;
-    }
+    const redirectPath = userRole === "admin" ? "/admin" : "/teacher";
+    return (
+      <Suspense fallback={<Loading />}>
+        <Navigate 
+          to={redirectPath} 
+          replace 
+          state={{ from: location.pathname }}
+        />
+      </Suspense>
+    );
   }
 
-  return <>{children}</>;
+  // Wrap children with Suspense for lazy loading
+  return (
+    <Suspense fallback={<Loading />}>
+      {children}
+    </Suspense>
+  );
 };
 
 export default PrivateRoute;

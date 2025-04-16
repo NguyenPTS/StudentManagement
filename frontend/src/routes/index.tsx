@@ -1,22 +1,31 @@
-import React, { Suspense } from "react";
+import React, { Suspense, lazy } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
-import { Layout } from "../components/layout";
+import Layout from "../components/layout/Layout";
 import Loading from "../components/Loading";
-import Login from "../pages/auth/Login";
-import Register from "../pages/auth/register";
 import PrivateRoute from "./PrivateRoute";
-import AdminDashboard from "../pages/admin/AdminDashboard";
-import UserList from "../pages/admin/UserList";
-import UserForm from "../pages/admin/UserForm";
-import teacherRoutes from "./teacher.routes";
 
-// Define TeacherLayout component
-const TeacherLayout = () => (
-  <Layout>
+// Lazy load components
+const Login = lazy(() => import("../pages/auth/Login"));
+const Register = lazy(() => import("../pages/auth/Register"));
+const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard"));
+const UserList = lazy(() => import("../pages/admin/UserList"));
+const UserForm = lazy(() => import("../pages/admin/UserForm"));
+const StudentList = lazy(() => import("../pages/admin/StudentList"));
+const StudentForm = lazy(() => import("../pages/admin/StudentForm"));
+const TeacherDashboard = lazy(
+  () => import("../pages/teacher/TeacherDashboard")
+);
+const TeacherStudentList = lazy(() => import("../pages/teacher/StudentList"));
+const TeacherStudentForm = lazy(() => import("../pages/teacher/StudentForm"));
+const NotFound = lazy(() => import("../pages/NotFound"));
+
+// Auth layout without header and sidebar
+const AuthLayout: React.FC = () => (
+  <div className="min-h-screen bg-gray-100 ">
     <Suspense fallback={<Loading />}>
       <Outlet />
     </Suspense>
-  </Layout>
+  </div>
 );
 
 export const router = createBrowserRouter([
@@ -26,6 +35,7 @@ export const router = createBrowserRouter([
   },
   {
     path: "/auth",
+    element: <AuthLayout />,
     children: [
       {
         path: "login",
@@ -39,42 +49,51 @@ export const router = createBrowserRouter([
   },
   {
     path: "/admin",
-    element: <Layout />,
+    element: (
+      <PrivateRoute roles={["admin"]}>
+        <Layout showSidebar={true} role="admin">
+          <Suspense fallback={<Loading />}>
+            <Outlet />
+          </Suspense>
+        </Layout>
+      </PrivateRoute>
+    ),
     children: [
       {
         index: true,
-        element: (
-          <PrivateRoute roles={["admin"]}>
-            <AdminDashboard />
-          </PrivateRoute>
-        ),
+        element: <AdminDashboard />,
       },
       {
         path: "users",
         children: [
           {
             index: true,
-            element: (
-              <PrivateRoute roles={["admin"]}>
-                <UserList />
-              </PrivateRoute>
-            ),
+            element: <UserList />,
           },
           {
             path: "create",
-            element: (
-              <PrivateRoute roles={["admin"]}>
-                <UserForm />
-              </PrivateRoute>
-            ),
+            element: <UserForm />,
           },
           {
             path: ":id/edit",
-            element: (
-              <PrivateRoute roles={["admin"]}>
-                <UserForm />
-              </PrivateRoute>
-            ),
+            element: <UserForm />,
+          },
+        ],
+      },
+      {
+        path: "students",
+        children: [
+          {
+            index: true,
+            element: <StudentList />,
+          },
+          {
+            path: "create",
+            element: <StudentForm />,
+          },
+          {
+            path: ":id/edit",
+            element: <StudentForm />,
           },
         ],
       },
@@ -84,9 +103,43 @@ export const router = createBrowserRouter([
     path: "/teacher",
     element: (
       <PrivateRoute roles={["teacher"]}>
-        <TeacherLayout />
+        <Layout showSidebar={true} role="teacher">
+          <Suspense fallback={<Loading />}>
+            <Outlet />
+          </Suspense>
+        </Layout>
       </PrivateRoute>
     ),
-    children: teacherRoutes,
+    children: [
+      {
+        index: true,
+        element: <TeacherDashboard />,
+      },
+      {
+        path: "students",
+        children: [
+          {
+            index: true,
+            element: <TeacherStudentList />,
+          },
+          {
+            path: "create",
+            element: <TeacherStudentForm />,
+          },
+          {
+            path: ":id/edit",
+            element: <TeacherStudentForm />,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    path: "*",
+    element: (
+      <Layout showSidebar={false}>
+        <NotFound />
+      </Layout>
+    ),
   },
 ]);

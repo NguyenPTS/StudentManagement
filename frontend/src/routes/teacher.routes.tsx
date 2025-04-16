@@ -29,6 +29,7 @@ const teacherRoutes: RouteObject[] = [
         <StudentForm />
       </PrivateRoute>
     ),
+    re,
   },
   {
     path: "/teacher/create/:id",

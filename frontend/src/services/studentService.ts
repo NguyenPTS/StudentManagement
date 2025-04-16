@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_URL } from '../config';
 
 export interface Student {
   id: string;
@@ -27,10 +28,6 @@ export interface Student {
 export type CreateStudentDTO = Omit<Student, 'id' | 'createdAt' | 'updatedAt'>;
 export type UpdateStudentDTO = Partial<CreateStudentDTO>;
 
-// API URL from environment or default to localhost:5000
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/students';
-console.log('API URL:', API_URL);
-
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_URL,
@@ -40,23 +37,14 @@ const api = axios.create({
   timeout: 10000, // 10 seconds timeout
 });
 
-// Add request interceptor to add token to headers
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log('Request with token:', config.url);
-    } else {
-      console.warn('No token found in localStorage');
-    }
-    return config;
-  },
-  (error) => {
-    console.error('Request interceptor error:', error);
-    return Promise.reject(error);
+// Add request interceptor to include auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
 // Add response interceptor for error handling
 api.interceptors.response.use(
@@ -91,27 +79,43 @@ api.interceptors.response.use(
 const studentService = {
   getAll: async (params?: { class?: string; status?: string; page?: number; limit?: number }): Promise<Student[]> => {
     try {
-      const response = await api.get('/', { params });
+      console.log('Calling getAll students with params:', params);
+      console.log('Current token:', localStorage.getItem('token'));
+      const response = await api.get('/students', { params });
+      console.log('Get all students response:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('Error in getAll:', error);
+      console.error('Error in getAll students:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       throw error;
     }
   },
 
   getById: async (id: string): Promise<Student> => {
     try {
-      const response = await api.get(`/${id}`);
+      console.log('Calling getStudentById with id:', id);
+      console.log('Current token:', localStorage.getItem('token'));
+      const response = await api.get(`/students/${id}`);
+      console.log('Get student by id response:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('Error in getById:', error);
+      console.error('Error in getStudentById:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       throw error;
     }
   },
 
   create: async (data: CreateStudentDTO): Promise<Student> => {
     try {
-      const response = await api.post('/', data);
+      const response = await api.post('/students', data);
       return response.data;
     } catch (error: any) {
       console.error('Error in create:', error);
@@ -121,7 +125,7 @@ const studentService = {
 
   update: async (id: string, data: UpdateStudentDTO): Promise<Student> => {
     try {
-      const response = await api.put(`/${id}`, data);
+      const response = await api.put(`/students/${id}`, data);
       return response.data;
     } catch (error: any) {
       console.error('Error in update:', error);
@@ -131,7 +135,7 @@ const studentService = {
 
   delete: async (id: string): Promise<void> => {
     try {
-      await api.delete(`/${id}`);
+      await api.delete(`/students/${id}`);
     } catch (error: any) {
       console.error('Error in delete:', error);
       throw error;
@@ -140,7 +144,7 @@ const studentService = {
 
   softDelete: async (id: string): Promise<Student> => {
     try {
-      const response = await api.patch(`/${id}/soft-delete`);
+      const response = await api.patch(`/students/${id}/soft-delete`);
       return response.data;
     } catch (error: any) {
       console.error('Error in softDelete:', error.response || error);

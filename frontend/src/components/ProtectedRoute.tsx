@@ -1,22 +1,25 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import type { User } from '../services/userService';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'admin' | 'teacher';
+  roles?: User['role'][];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles }) => {
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to="/" replace />;
+  if (roles && (!user?.role || !roles.includes(user.role))) {
+    // Redirect to dashboard based on user role
+    const dashboardPath = user?.role === 'admin' ? '/admin/dashboard' : '/teacher/dashboard';
+    return <Navigate to={dashboardPath} replace />;
   }
 
   return <>{children}</>;
