@@ -1,5 +1,23 @@
 import mongoose from "mongoose";
 
+export interface IStudent extends mongoose.Document {
+  mssv: string;
+  name: string;
+  dob: Date;
+  email: string;
+  class: string;
+  phone?: string;
+  address?: string;
+  status: "active" | "inactive" | "graduated";
+  averageScore?: number;
+  attendance?: {
+    present: number;
+    total: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const studentSchema = new mongoose.Schema(
   {
     mssv: {
@@ -55,9 +73,7 @@ const studentSchema = new mongoose.Schema(
   }
 );
 
-// Thêm index cho các trường thường được tìm kiếm
-studentSchema.index({ mssv: 1 });
-studentSchema.index({ email: 1 });
+// Thêm index cho trường class
 studentSchema.index({ class: 1 });
 
 export default mongoose.model("Student", studentSchema);

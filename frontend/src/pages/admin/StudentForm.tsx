@@ -1,30 +1,30 @@
-import { Form, Input, Button, message } from "antd";
-import { useForm, Controller, SubmitHandler } from "react-hook-form";
+import { Form, Input, Button, message, DatePicker } from "antd";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useEffect } from "react";
-import studentService from "../../services/studentService";
+import studentService, { CreateStudentDTO } from "../../services/studentService";
 import classService from "../../services/classService";
+import { Class } from "../../types/class";
 import teacherService from "../../services/teacherService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import dayjs from "dayjs";
+import { Student, StudentFormData } from "../../types/student";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Invalid email address").optional(),
+  password: z.string().min(6, "Password must be at least 6 characters").optional(),
   phone: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
-  status: z.enum(["active", "inactive"]),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  status: z.enum(["active", "inactive", "graduated"]),
+  mssv: z.string().optional(),
   classId: z.string().optional(),
   teacherId: z.string().optional(),
 });
 
-type StudentFormData = z.infer<typeof formSchema>;
-
-interface Class {
-  id: string;
-  name: string;
-}
+type FormData = z.infer<typeof formSchema>;
 
 interface Teacher {
   _id: string;
@@ -39,20 +39,25 @@ interface Teacher {
 }
 
 const StudentForm = () => {
-  const [form] = Form.useForm();
   const [classes, setClasses] = useState<Class[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const { control, handleSubmit, formState: { errors } } = useForm<StudentFormData>({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors }
+  } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-    name: "",
-    email: "",
+      name: "",
+      email: "",
       password: "",
-    phone: "",
-    address: "",
-    status: "active",
+      phone: "",
+      address: "",
+      dateOfBirth: "",
+      status: "active",
+      mssv: "",
     },
   });
 
@@ -72,13 +77,30 @@ const StudentForm = () => {
     fetchData();
   }, []);
 
-  const onSubmit: SubmitHandler<StudentFormData> = async (data) => {
+  const onSubmit = async (data: FormData) => {
     try {
       setLoading(true);
-      await studentService.create(data);
+      if (!data.classId) {
+        message.error("Vui lòng chọn lớp cho sinh viên");
+        return;
+      }
+
+      const studentData: CreateStudentDTO = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        dob: dayjs(data.dateOfBirth).toISOString(),
+        class: data.classId,
+        status: data.status,
+        mssv: data.mssv,
+        teacherId: data.teacherId
+      };
+
+      await studentService.create(studentData);
       message.success("Student created successfully");
-      form.resetFields();
     } catch (error) {
+      console.error("Error creating student:", error);
       message.error("Failed to create student");
     } finally {
       setLoading(false);
@@ -86,19 +108,26 @@ const StudentForm = () => {
   };
 
   return (
-    <Form
-      form={form}
-      onFinish={handleSubmit(onSubmit)}
-      layout="vertical"
-      className="max-w-lg mx-auto p-6"
-    >
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-lg mx-auto p-6">
       <Form.Item
-        label="Name"
-        name="name"
-        rules={[{ required: true, message: "Please input student name!" }]}
+        label="Student ID"
+        validateStatus={errors.mssv ? "error" : ""}
+        help={errors.mssv?.message}
       >
         <Controller
-                  name="name"
+          name="mssv"
+          control={control}
+          render={({ field }) => <Input {...field} placeholder="Enter student ID" />}
+        />
+      </Form.Item>
+
+      <Form.Item
+        label="Name"
+        validateStatus={errors.name ? "error" : ""}
+        help={errors.name?.message}
+      >
+        <Controller
+          name="name"
           control={control}
           render={({ field }) => <Input {...field} />}
         />
@@ -106,35 +135,51 @@ const StudentForm = () => {
 
       <Form.Item
         label="Email"
-        name="email"
-        rules={[
-          { required: true, message: "Please input student email!" },
-          { type: "email", message: "Please enter a valid email!" },
-        ]}
+        validateStatus={errors.email ? "error" : ""}
+        help={errors.email?.message}
       >
         <Controller
-                  name="email"
+          name="email"
           control={control}
-          render={({ field }) => <Input {...field} />}
+          render={({ field }) => <Input {...field} disabled className="bg-gray-100" />}
         />
       </Form.Item>
 
       <Form.Item
         label="Password"
-        name="password"
-        rules={[{ required: true, message: "Please input password!" }]}
+        validateStatus={errors.password ? "error" : ""}
+        help={errors.password?.message}
       >
         <Controller
           name="password"
           control={control}
-          render={({ field }) => <Input.Password {...field} />}
+          render={({ field }) => <Input.Password {...field} placeholder="Leave blank to keep current password" />}
+        />
+      </Form.Item>
+
+      <Form.Item
+        label="Date of Birth"
+        validateStatus={errors.dateOfBirth ? "error" : ""}
+        help={errors.dateOfBirth?.message}
+      >
+        <Controller
+          name="dateOfBirth"
+          control={control}
+          render={({ field }) => (
+            <DatePicker 
+              value={field.value ? dayjs(field.value) : null}
+              style={{ width: '100%' }}
+              format="YYYY-MM-DD"
+              onChange={(date) => field.onChange(date ? date.format('YYYY-MM-DD') : '')}
+            />
+          )}
         />
       </Form.Item>
 
       <Form.Item
         label="Phone"
-        name="phone"
-        rules={[{ required: true, message: "Please input phone number!" }]}
+        validateStatus={errors.phone ? "error" : ""}
+        help={errors.phone?.message}
       >
         <Controller
           name="phone"
@@ -145,8 +190,8 @@ const StudentForm = () => {
 
       <Form.Item
         label="Address"
-        name="address"
-        rules={[{ required: true, message: "Please input address!" }]}
+        validateStatus={errors.address ? "error" : ""}
+        help={errors.address?.message}
       >
         <Controller
           name="address"
@@ -156,8 +201,32 @@ const StudentForm = () => {
       </Form.Item>
 
       <Form.Item
+        label="Status"
+        validateStatus={errors.status ? "error" : ""}
+        help={errors.status?.message}
+      >
+        <Controller
+          name="status"
+          control={control}
+          render={({ field }) => (
+            <Select onValueChange={field.onChange} value={field.value}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="graduated">Graduated</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </Form.Item>
+
+      <Form.Item
         label="Class"
-        name="classId"
+        validateStatus={errors.classId ? "error" : ""}
+        help={errors.classId?.message}
       >
         <Controller
           name="classId"
@@ -181,7 +250,8 @@ const StudentForm = () => {
 
       <Form.Item
         label="Teacher"
-        name="teacherId"
+        validateStatus={errors.teacherId ? "error" : ""}
+        help={errors.teacherId?.message}
       >
         <Controller
           name="teacherId"
@@ -203,34 +273,10 @@ const StudentForm = () => {
         />
       </Form.Item>
 
-      <Form.Item
-        label="Status"
-                  name="status"
-        rules={[{ required: true, message: "Please select status!" }]}
-      >
-        <Controller
-          name="status"
-          control={control}
-          render={({ field }) => (
-            <Select onValueChange={field.onChange} value={field.value}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </Form.Item>
-
-      <Form.Item>
-        <Button type="primary" htmlType="submit" loading={loading} block>
-          Create Student
-              </Button>
-      </Form.Item>
-    </Form>
+      <Button type="primary" htmlType="submit" loading={loading} block>
+        Create Student
+      </Button>
+    </form>
   );
 };
 

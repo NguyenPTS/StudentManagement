@@ -3,6 +3,21 @@ import mongoose from "mongoose";
 export type Role = "admin" | "teacher";
 export type Status = "active" | "inactive" | "blocked";
 
+export interface IUser {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  email: string;
+  password: string;
+  role: Role;
+  status: Status;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type UserDocument = mongoose.Document<unknown, {}, IUser> & IUser;
+
 const userSchema = new mongoose.Schema(
   {
     name: {

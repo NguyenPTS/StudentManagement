@@ -160,7 +160,7 @@ const StudentList = () => {
                   <TableCell className="font-medium">{student.name}</TableCell>
                   <TableCell>{student.email}</TableCell>
                   <TableCell>{student.phone || "N/A"}</TableCell>
-                  <TableCell>{student.class?.name || "Chưa phân lớp"}</TableCell>
+                  <TableCell>{student.classDetails?.name || "Chưa phân lớp"}</TableCell>
                   <TableCell>{student.teacher?.name || "Chưa phân giáo viên"}</TableCell>
                   <TableCell>
                     <Badge variant={student.status === "active" ? "success" : "destructive"}>

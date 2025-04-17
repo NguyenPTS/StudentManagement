@@ -44,11 +44,11 @@ const StudentList = () => {
   };
 
   const handleEdit = (id: string) => {
-    navigate(`/teacher/create/${id}/update`);
+    navigate(`/teacher/students/${id}/edit`);
   };
 
   const handleAdd = () => {
-    navigate("/teacher/create");
+    navigate("/teacher/students/create");
   };
 
   if (loading) {

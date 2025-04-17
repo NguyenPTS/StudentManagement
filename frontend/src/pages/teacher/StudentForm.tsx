@@ -3,58 +3,35 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Form, Input, Button, DatePicker, message } from "antd";
 import studentService from "../../services/studentService";
+import type { Student, CreateStudentDTO } from "../../services/studentService";
 import dayjs from "dayjs";
-
-interface ClassType {
-  id: string;
-  name: string;
-}
-
-interface StudentType {
-  id?: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  dob: string;
-  status: 'active' | 'inactive' | 'graduated';
-  mssv: string;
-  class?: ClassType;
-}
 
 interface FormData {
   name: string;
   email: string;
   phone: string;
   address: string;
-  dob: string;
+  dateOfBirth: string;
   status: 'active' | 'inactive' | 'graduated';
-  mssv: string;
-  class: ClassType;
+  mssv?: string;
+  classId?: string;
 }
 
-const initialFormData: FormData = {
-  name: "",
-  email: "",
-  phone: "",
-  address: "",
-  dob: "",
-  status: "active",
-  mssv: "",
-  class: {
-    id: "",
-    name: ""
-  }
-};
-
 const StudentForm = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [student, setStudent] = useState<StudentType | null>(null);
+  const [student, setStudent] = useState<Student | null>(null);
+  const [formData, setFormData] = useState<FormData>({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    dateOfBirth: "",
+    status: "active",
+  });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -71,39 +48,33 @@ const StudentForm = () => {
         email: student.email || "",
         phone: student.phone || "",
         address: student.address || "",
-        dob: student.dob || "",
+        dateOfBirth: student.dob ? dayjs(student.dob).format('YYYY-MM-DD') : "",
         status: student.status || "active",
         mssv: student.mssv || "",
-        class: student.class || { id: "", name: "" }
+        classId: student.class
       });
     }
   }, [student]);
 
   const loadStudent = async () => {
-    if (!id) return;
-
     try {
-      const loadedStudent = await studentService.getById(id);
-      if (!loadedStudent) {
-        throw new Error("Không tìm thấy thông tin sinh viên");
-      }
-
+      const loadedStudent = await studentService.getById(id!);
       const formattedData: FormData = {
-        name: loadedStudent.name || "",
-        email: loadedStudent.email || "",
+        name: loadedStudent.name,
+        email: loadedStudent.email,
         phone: loadedStudent.phone || "",
         address: loadedStudent.address || "",
-        dob: loadedStudent.dob ? new Date(loadedStudent.dob).toISOString().split("T")[0] : "",
-        status: loadedStudent.status || "active",
+        dateOfBirth: loadedStudent.dob ? dayjs(loadedStudent.dob).format('YYYY-MM-DD') : "",
+        status: loadedStudent.status,
         mssv: loadedStudent.mssv || "",
-        class: loadedStudent.class || { id: "", name: "" }
+        classId: loadedStudent.class
       };
 
-      setStudent(loadedStudent as StudentType);
+      setStudent(loadedStudent);
       setFormData(formattedData);
     } catch (error: any) {
       console.error("Error loading student:", error);
-      message.error(error.response?.data?.message || "Không thể tải thông tin sinh viên");
+      message.error(error.message || "Không thể tải thông tin sinh viên");
     }
   };
 
@@ -125,8 +96,8 @@ const StudentForm = () => {
         return "";
       case "address":
         return !value.trim() ? "Vui lòng nhập địa chỉ sinh viên" : "";
-      case "dob":
-        return !value ? "Vui lòng chọn ngày sinh sinh viên" : "";
+      case "dateOfBirth":
+        return !value ? "Vui lòng nhập ngày sinh" : "";
       default:
         return "";
     }
@@ -138,13 +109,10 @@ const StudentForm = () => {
     >
   ) => {
     const { name, value } = e.target;
-    if (name === 'class') {
+    if (name === 'classId') {
       setFormData(prev => ({
         ...prev,
-        class: {
-          ...prev.class,
-          name: value
-        }
+        classId: value
       }));
     } else {
       setFormData((prev) => ({
@@ -170,26 +138,40 @@ const StudentForm = () => {
     if (!formData.email) newErrors.email = "Vui lòng nhập email";
     if (!formData.phone) newErrors.phone = "Vui lòng nhập số điện thoại";
     if (!formData.address) newErrors.address = "Vui lòng nhập địa chỉ";
-    if (!formData.dob) newErrors.dob = "Vui lòng nhập ngày sinh";
+    if (!formData.dateOfBirth) newErrors.dateOfBirth = "Vui lòng nhập ngày sinh";
     if (!formData.mssv) newErrors.mssv = "Vui lòng nhập mã số sinh viên";
-    if (!formData.class.name) newErrors.class = "Vui lòng nhập tên lớp";
+    if (!formData.classId) newErrors.classId = "Vui lòng nhập tên lớp";
     return newErrors;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
-      setFieldErrors(validationErrors);
-      return;
-    }
-
-    setLoading(true);
+  const handleSubmit = async () => {
     try {
-      const studentData: StudentType = {
-        ...formData,
-        class: formData.class.id ? formData.class : undefined
+      setLoading(true);
+      const errors = validateForm();
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setError("Vui lòng điền đầy đủ thông tin bắt buộc");
+        return;
+      }
+
+      if (!formData.classId) {
+        setError("Vui lòng chọn lớp cho sinh viên");
+        return;
+      }
+
+      // Transform data to match server expectations
+      const studentData: CreateStudentDTO = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        dob: dayjs(formData.dateOfBirth).toISOString(),
+        class: formData.classId,  // Now we know it's not undefined
+        status: formData.status === 'graduated' ? 'inactive' : formData.status,
+        mssv: formData.mssv
       };
+
+      console.log("[StudentForm] Submitting data:", studentData);
 
       if (id) {
         await studentService.update(id, studentData);
@@ -198,9 +180,12 @@ const StudentForm = () => {
         await studentService.create(studentData);
         message.success("Thêm sinh viên thành công");
       }
-      navigate(-1);
-    } catch (error) {
-      message.error("Có lỗi xảy ra khi lưu sinh viên");
+      navigate("/teacher/students");
+    } catch (error: any) {
+      console.error("[StudentForm] Error submitting form:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi lưu thông tin sinh viên";
+      message.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -378,30 +363,34 @@ const StudentForm = () => {
 
               <div>
                 <label
-                  htmlFor="dob"
+                  htmlFor="dateOfBirth"
                   className="block text-sm font-medium text-gray-700"
                 >
                   Ngày sinh <span className="text-red-500">*</span>
                 </label>
                 <DatePicker
-                  id="dob"
-                  name="dob"
-                  value={formData.dob ? dayjs(formData.dob) : null}
+                  id="dateOfBirth"
+                  name="dateOfBirth"
+                  value={formData.dateOfBirth ? dayjs(formData.dateOfBirth) : null}
                   onChange={(date) => {
                     setFormData(prev => ({
                       ...prev,
-                      dob: date ? date.format('YYYY-MM-DD') : '',
+                      dateOfBirth: date ? date.format('YYYY-MM-DD') : '',
+                    }));
+                    setFieldErrors(prev => ({
+                      ...prev,
+                      dateOfBirth: date ? '' : 'Vui lòng nhập ngày sinh',
                     }));
                   }}
                   className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
-                    fieldErrors.dob
+                    fieldErrors.dateOfBirth
                       ? "border-red-300 focus:border-red-500 focus:ring-red-500"
                       : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                   }`}
                 />
-                {fieldErrors.dob && (
+                {fieldErrors.dateOfBirth && (
                   <p className="mt-1 text-sm text-red-600">
-                    {fieldErrors.dob}
+                    {fieldErrors.dateOfBirth}
                   </p>
                 )}
               </div>
@@ -411,7 +400,7 @@ const StudentForm = () => {
                   htmlFor="mssv"
                   className="block text-sm font-medium text-gray-700"
                 >
-                  Mã số sinh viên
+                  Mã số sinh viên <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -419,23 +408,31 @@ const StudentForm = () => {
                   name="mssv"
                   value={formData.mssv}
                   onChange={handleChange}
+                  required
                   placeholder="Nhập mã số sinh viên"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+                    fieldErrors.mssv
+                      ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+                  }`}
                 />
+                {fieldErrors.mssv && (
+                  <p className="mt-1 text-sm text-red-600">{fieldErrors.mssv}</p>
+                )}
               </div>
 
               <div>
                 <label
-                  htmlFor="class"
+                  htmlFor="classId"
                   className="block text-sm font-medium text-gray-700"
                 >
                   Lớp
                 </label>
                 <input
                   type="text"
-                  id="class"
-                  name="class"
-                  value={formData.class.name}
+                  id="classId"
+                  name="classId"
+                  value={formData.classId}
                   onChange={handleChange}
                   placeholder="Nhập tên lớp"
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -488,8 +485,13 @@ const StudentForm = () => {
             </div>
 
             <div className="flex justify-end space-x-4 mt-6">
-              <Button onClick={() => navigate("/student/list")}>Hủy</Button>
-              <Button type="primary" onClick={handleSubmit}>
+              <Button onClick={() => navigate("/teacher")}>Hủy</Button>
+              <Button 
+                type="primary" 
+                onClick={handleSubmit}
+                loading={loading}
+                disabled={loading}
+              >
                 {id ? "Cập nhật" : "Tạo mới"}
               </Button>
             </div>

@@ -5,7 +5,7 @@ import studentService from "../../services/studentService";
 import classService from "../../services/classService";
 import teacherService from "../../services/teacherService";
 import type { Student } from "../../services/studentService";
-import type { Class } from "../../services/classService";
+import type { Class } from "../../types/class";
 import type { Teacher } from "../../services/teacherService";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
@@ -40,9 +40,9 @@ const StudentManagement = () => {
       setStudent(studentData);
       
       // Load class data if student has a class
-      if (studentData.class?.id) {
+      if (studentData.classDetails?.id) {
         try {
-          const classData = await classService.getById(studentData.class.id);
+          const classData = await classService.getById(studentData.classDetails.id);
           setClassInfo(classData);
         } catch (err) {
           console.error("Error loading class:", err);

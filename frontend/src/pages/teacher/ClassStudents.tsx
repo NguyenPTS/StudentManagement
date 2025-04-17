@@ -16,7 +16,7 @@ const ClassStudents: React.FC = () => {
     
     setLoading(true);
     try {
-      const data = await studentService.getAll({ class: classId });
+      const data = await studentService.getAll({ classId });
       setStudents(data);
     } catch (error) {
       console.error('Error fetching students:', error);
@@ -52,9 +52,14 @@ const ClassStudents: React.FC = () => {
       key: 'status',
       render: (status: string) => (
         <Tag color={status === 'active' ? 'green' : 'red'}>
-          {status === 'active' ? 'Đang học' : 'Đã nghỉ'}
+          {status.toUpperCase()}
         </Tag>
       ),
+      filters: [
+        { text: 'Active', value: 'active' },
+        { text: 'Inactive', value: 'inactive' }
+      ],
+      onFilter: (value: boolean | React.Key, record: Student) => record.status === value.toString()
     },
     {
       title: 'Thao tác',
@@ -70,23 +75,25 @@ const ClassStudents: React.FC = () => {
   ];
 
   return (
-    <Card
-      title={
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
-            Quay lại
-          </Button>
-          <span>Danh sách học sinh</span>
-        </Space>
-      }
-    >
-      <Table
-        columns={columns}
-        dataSource={students}
-        loading={loading}
-        rowKey="id"
-      />
-    </Card>
+    <div className="mt-16">
+      <Card
+        title={
+          <Space>
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
+              Quay lại
+            </Button>
+            <span>Danh sách học sinh</span>
+          </Space>
+        }
+      >
+        <Table
+          columns={columns}
+          dataSource={students}
+          loading={loading}
+          rowKey="id"
+        />
+      </Card>
+    </div>
   );
 };
 

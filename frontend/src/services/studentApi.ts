@@ -1,53 +1,56 @@
-import axios from 'axios';
+import { Student, CreateStudentDTO, UpdateStudentDTO, StudentQueryParams } from '../types/student';
+import axiosInstance from './axiosInstance';
 
-export interface Student {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  dateOfBirth: string;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
-  mssv?: string;
-  class?: string;
-}
+const API_URL = 'http://localhost:5000/students';
 
-export type CreateStudentDTO = Omit<Student, 'id' | 'createdAt' | 'updatedAt'>;
-export type UpdateStudentDTO = Partial<CreateStudentDTO>;
-
-const API_URL = 'http://localhost:5000/api/students';
-
-const studentApi = {
-  getAll: async (): Promise<Student[]> => {
-    const response = await axios.get(API_URL);
+export const studentApi = {
+  getAll: async (params?: StudentQueryParams) => {
+    const response = await axiosInstance.get<Student[]>(API_URL, { params });
     return response.data;
   },
 
-  getById: async (id: string): Promise<Student> => {
-    const response = await axios.get(`${API_URL}/${id}`);
+  getById: async (id: string) => {
+    const response = await axiosInstance.get<Student>(`${API_URL}/${id}`);
     return response.data;
   },
 
-  create: async (student: CreateStudentDTO): Promise<Student> => {
-    const response = await axios.post(API_URL, student);
+  create: async (data: CreateStudentDTO) => {
+    const response = await axiosInstance.post<Student>(API_URL, data);
     return response.data;
   },
 
-  update: async (id: string, student: UpdateStudentDTO): Promise<Student> => {
-    const response = await axios.put(`${API_URL}/${id}`, student);
+  update: async (id: string, data: UpdateStudentDTO) => {
+    const response = await axiosInstance.put<Student>(`${API_URL}/${id}`, data);
     return response.data;
   },
 
-  delete: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/${id}`);
+  delete: async (id: string) => {
+    const response = await axiosInstance.delete<void>(`${API_URL}/${id}`);
+    return response.data;
   },
 
-  softDelete: async (id: string): Promise<Student> => {
-    const response = await axios.patch(`${API_URL}/${id}/soft-delete`);
+  softDelete: async (id: string) => {
+    const response = await axiosInstance.patch<Student>(`${API_URL}/${id}/soft-delete`);
+    return response.data;
+  },
+
+  restore: async (id: string) => {
+    const response = await axiosInstance.patch<Student>(`${API_URL}/${id}/restore`);
+    return response.data;
+  },
+
+  bulkDelete: async (ids: string[]) => {
+    const response = await axiosInstance.delete<void>(API_URL, { data: { ids } });
+    return response.data;
+  },
+
+  bulkSoftDelete: async (ids: string[]) => {
+    const response = await axiosInstance.patch<void>(`${API_URL}/soft-delete`, { ids });
+    return response.data;
+  },
+
+  bulkRestore: async (ids: string[]) => {
+    const response = await axiosInstance.patch<void>(`${API_URL}/restore`, { ids });
     return response.data;
   }
-};
-
-export default studentApi; 
+}; 

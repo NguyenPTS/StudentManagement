@@ -1,68 +1,76 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { Avatar, Dropdown, Menu } from "antd";
-import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
+import React from 'react';
+import { Layout, Button, Avatar, Dropdown, Menu } from 'antd';
+import { 
+  UserOutlined, 
+  LogoutOutlined, 
+  MenuOutlined,
+  SunOutlined,
+  MoonOutlined
+} from '@ant-design/icons';
+import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
+import type { Theme } from '../../context/ThemeContext';
 
-const Header = () => {
-  const { isAuthenticated, user, logout } = useAuth();
-  const navigate = useNavigate();
+interface HeaderProps {
+  onToggleTheme: () => void;
+  theme: Theme;
+  onToggleMobileMenu: () => void;
+}
 
-  const userMenuItems = [
-    {
-      key: "profile",
-      icon: <UserOutlined />,
-      label: "Hồ sơ",
-    },
-    {
-      key: "logout",
-      icon: <LogoutOutlined />,
-      label: "Đăng xuất",
-      onClick: () => {
-        logout();
-        navigate("/auth/login");
-      },
-    },
-  ];
+const { Header: AntHeader } = Layout;
+
+const Header: React.FC<HeaderProps> = ({ onToggleTheme, theme, onToggleMobileMenu }) => {
+  const { user, logout } = useAuth();
+
+  const userMenu = (
+    <Menu>
+      <Menu.Item key="profile">
+        <Link to="/profile">
+          <UserOutlined /> Hồ sơ
+        </Link>
+      </Menu.Item>
+      <Menu.Item key="logout" onClick={logout}>
+        <LogoutOutlined /> Đăng xuất
+      </Menu.Item>
+    </Menu>
+  );
 
   return (
-    <header className="bg-white shadow-sm">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="" className="text-xl font-bold text-gray-800">
+    <AntHeader className="fixed w-full z-50 px-4 h-16 flex items-center justify-between bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center">
+        <Button
+          type="text"
+          icon={<MenuOutlined />}
+          onClick={onToggleMobileMenu}
+          className="mr-4 md:hidden dark:text-white"
+        />
+        <Link to="/" className="flex items-center">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
             Student Management
-          </Link>
-
-          {/* Navigation */}
-          <div className="flex items-center space-x-4">
-            {isAuthenticated ? (
-              <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-                <div className="flex items-center cursor-pointer">
-                  <Avatar icon={<UserOutlined />} />
-                  <span className="ml-2 text-gray-700">{user?.name}</span>
-                </div>
-              </Dropdown>
-            ) : (
-              <>
-                <Link
-                  to="/auth/login"
-                  className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Đăng nhập
-                </Link>
-                <Link
-                  to="/auth/register"
-                  className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  Đăng ký
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
+          </h1>
+        </Link>
       </div>
-    </header>
+
+      <div className="flex items-center space-x-4">
+        <Button
+          type="text"
+          icon={theme === 'dark' ? <SunOutlined /> : <MoonOutlined />}
+          onClick={onToggleTheme}
+          className="dark:text-white"
+        />
+        
+        {user && (
+          <Dropdown overlay={userMenu} placement="bottomRight">
+            <div className="flex items-center space-x-2 cursor-pointer">
+              <Avatar icon={<UserOutlined />} />
+              <span className="hidden md:inline text-gray-900 dark:text-white">
+                {user.name}
+              </span>
+            </div>
+          </Dropdown>
+        )}
+      </div>
+    </AntHeader>
   );
 };
 
