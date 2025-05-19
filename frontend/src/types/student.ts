@@ -1,10 +1,18 @@
+import { Teacher } from './teacher';
+import { Schedule } from './schedule';
+import { Assignment } from './assignment';
+
 export interface Class {
   id: string;
   name: string;
   code: string;
   description?: string;
-  teacherId?: string;
-  status: 'active' | 'inactive' | 'completed';
+  teacher?: Teacher;
+  students?: Student[];
+  schedule?: Schedule[];
+  semester?: string;
+  status?: string;
+  assignments?: Assignment[];
 }
 
 export interface Teacher {
@@ -18,16 +26,11 @@ export interface Student {
   id: string;
   name: string;
   email: string;
-  phone: string;
-  address: string;
-  dob: string;
-  status: 'active' | 'inactive' | 'graduated';
-  createdAt: string;
-  updatedAt: string;
-  mssv?: string;
-  class?: string;
-  teacherId?: string;
-  classDetails?: Class;
+  phone?: string;
+  address?: string;
+  dateOfBirth?: Date;
+  gender?: 'male' | 'female' | 'other';
+  status: 'active' | 'inactive';
   teacher?: Teacher;
 }
 

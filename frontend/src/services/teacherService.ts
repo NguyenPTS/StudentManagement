@@ -41,7 +41,7 @@ const teacherService = {
     return response.data;
   },
 
-  create: async (data: Omit<Teacher, 'id' | 'createdAt' | 'updatedAt'>): Promise<Teacher> => {
+  create: async (data: Omit<Teacher, '_id' | 'createdAt' | 'updatedAt'>): Promise<Teacher> => {
     const response = await axiosInstance.post('/teachers', data);
     return response.data;
   },

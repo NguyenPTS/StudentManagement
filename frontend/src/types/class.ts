@@ -1,3 +1,5 @@
+import { Assignment } from './assignment';
+
 export interface Schedule {
   dayOfWeek: number;
   startTime: string;
@@ -22,13 +24,7 @@ export interface Student {
 
 export interface Grade {
   studentId: string;
-  assignments: {
-    id: string;
-    name: string;
-    score: number;
-    maxScore: number;
-    weight: number;
-  }[];
+  assignments: Assignment[];
   finalGrade?: number;
 }
 

@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/index.ts",
+    "start:dev": "nodemon src/index.ts",
     "seed": "ts-node src/seed/index.ts",
     "seed:admin": "ts-node src/seed/admin.seed.ts"
   },

@@ -9,6 +9,7 @@ import {
   ClassFilters,
   Student
 } from '../types/class';
+import { Student as StudentType } from '../types/student';
 import axiosInstance from './axiosInstance';
 
 export interface CreateClassData {
@@ -215,6 +216,17 @@ class ClassService {
       await axiosInstance.delete(`/classes/${classId}/students/${studentId}`);
     } catch (error) {
       this.logApiError('DELETE', `/classes/${classId}/students/${studentId}`, error);
+      throw error;
+    }
+  }
+
+  async getStudents(classId: string): Promise<StudentType[]> {
+    try {
+      this.logApiCall('GET', `/classes/${classId}/students`);
+      const response = await axiosInstance.get(`/classes/${classId}/students`);
+      return response.data;
+    } catch (error) {
+      this.logApiError('GET', `/classes/${classId}/students`, error);
       throw error;
     }
   }

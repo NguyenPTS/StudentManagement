@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import type { Theme } from '../../context/ThemeContext';
+import { SxProps } from '@mui/material';
 
 interface HeaderProps {
   onToggleTheme: () => void;
@@ -34,6 +35,14 @@ const Header: React.FC<HeaderProps> = ({ onToggleTheme, theme, onToggleMobileMen
       </Menu.Item>
     </Menu>
   );
+
+  const gridItemProps: { sx?: SxProps<Theme> } = {
+    sx: { 
+      width: "100%",
+      mb: 1,
+      padding: 0,
+    },
+  };
 
   return (
     <AntHeader className="fixed w-full z-50 px-4 h-16 flex items-center justify-between bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">

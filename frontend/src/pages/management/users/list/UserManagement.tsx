@@ -27,7 +27,7 @@ import userService, {
   User,
   CreateUserDTO,
   UpdateUserDTO,
-} from "../../services/userService";
+} from "../../../../services/userService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
@@ -152,11 +152,9 @@ const UserManagement: React.FC = () => {
   });
 
   const handleAdd = () => {
-    console.log("handleAdd called");
     setEditingUser(null);
     form.resetFields();
     setModalVisible(true);
-    console.log("modalVisible set to true");
   };
 
   const handleEdit = (user: User) => {
@@ -281,7 +279,7 @@ const UserManagement: React.FC = () => {
       case "blocked":
         return "Đã khóa";
       default:
-        return "Không xác định";
+        return status;
     }
   };
 
@@ -290,6 +288,7 @@ const UserManagement: React.FC = () => {
       title: "Tên",
       dataIndex: "name",
       key: "name",
+      sorter: (a: User, b: User) => a.name.localeCompare(b.name),
     },
     {
       title: "Email",
@@ -300,59 +299,20 @@ const UserManagement: React.FC = () => {
       title: "Vai trò",
       dataIndex: "role",
       key: "role",
-      render: (role: string) =>
-        role === "admin" ? "Quản trị viên" : "Giáo viên",
+      render: (role: string) => (
+        <Tag color={role === "admin" ? "blue" : "green"}>
+          {role.toUpperCase()}
+        </Tag>
+      ),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      render: (status: UserStatus, record: User) => (
-        <Select
-          value={status}
-          onChange={(value: UserStatus) => {
-            Modal.confirm({
-              title: "Xác nhận thay đổi trạng thái",
-              content: `Bạn có chắc chắn muốn chuyển sang trạng thái "${getStatusText(value)}"?`,
-              okText: "Có",
-              cancelText: "Không",
-              onOk: () =>
-                userService
-                  .updateStatus(record._id, value)
-                  .then(() => {
-                    message.success("Đã cập nhật trạng thái");
-                    queryClient.invalidateQueries({ queryKey: ["users"] });
-                  })
-                  .catch((error) => {
-                    message.error(
-                      "Cập nhật thất bại: " +
-                        (error?.response?.data?.message || error.message)
-                    );
-                  }),
-            });
-          }}
-          style={{ width: 150 }}
-          dropdownStyle={{ minWidth: 200 }}
-        >
-          <Select.Option value="active">
-            <Space>
-              <CheckCircleOutlined style={{ color: "#52c41a" }} />
-              <span>Hoạt động</span>
-            </Space>
-          </Select.Option>
-          <Select.Option value="inactive">
-            <Space>
-              <PauseCircleOutlined style={{ color: "#faad14" }} />
-              <span>Không hoạt động</span>
-            </Space>
-          </Select.Option>
-          <Select.Option value="blocked">
-            <Space>
-              <StopOutlined style={{ color: "#ff4d4f" }} />
-              <span>Đã khóa</span>
-            </Space>
-          </Select.Option>
-        </Select>
+      render: (status: UserStatus) => (
+        <Tag icon={getStatusIcon(status)} color={getStatusColor(status)}>
+          {getStatusText(status)}
+        </Tag>
       ),
     },
     {
@@ -361,101 +321,55 @@ const UserManagement: React.FC = () => {
       render: (_: any, record: User) => (
         <Space size="middle">
           <Button
-            type="text"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
-          >
-            Sửa
-          </Button>
+            title="Chỉnh sửa"
+          />
           <Button
-            type="text"
             icon={<KeyOutlined />}
             onClick={() => handleResetPassword(record)}
-          >
-            Đặt lại mật khẩu
-          </Button>
-          <Select
-            value={record.status}
-            onChange={(value: UserStatus) => {
-              Modal.confirm({
-                title: "Xác nhận thay đổi trạng thái",
-                content: `Bạn có chắc chắn muốn chuyển sang trạng thái "${getStatusText(value)}"?`,
-                okText: "Có",
-                cancelText: "Không",
-                onOk: async () => {
-                  try {
-                    await userService.updateStatus(record._id, value);
-                    message.success("Đã cập nhật trạng thái");
-                    queryClient.invalidateQueries({ queryKey: ["users"] });
-                  } catch (error: any) {
-                    message.error(
-                      "Cập nhật thất bại: " +
-                        (error?.response?.data?.message || error.message)
-                    );
-                  }
-                },
-              });
-            }}
-            style={{ width: 130 }}
-            dropdownStyle={{ minWidth: 200 }}
-          >
-            <Select.Option value="active">
-              <Space>
-                <CheckCircleOutlined style={{ color: "#52c41a" }} />
-                <span>Hoạt động</span>
-              </Space>
-            </Select.Option>
-            <Select.Option value="inactive">
-              <Space>
-                <PauseCircleOutlined style={{ color: "#faad14" }} />
-                <span>Không hoạt động</span>
-              </Space>
-            </Select.Option>
-            <Select.Option value="blocked">
-              <Space>
-                <StopOutlined style={{ color: "#ff4d4f" }} />
-                <span>Đã khóa</span>
-              </Space>
-            </Select.Option>
-          </Select>
+            title="Đặt lại mật khẩu"
+          />
+          <Button
+            icon={record.status === "active" ? <LockOutlined /> : <UnlockOutlined />}
+            onClick={() => handleToggleStatus(record)}
+            title={record.status === "active" ? "Khóa" : "Mở khóa"}
+          />
           <Popconfirm
-            title="Xác nhận xóa người dùng"
-            description="Bạn có chắc chắn muốn xóa người dùng này?"
+            title="Bạn có chắc chắn muốn xóa người dùng này?"
             onConfirm={() => handleDelete(record._id)}
             okText="Có"
             cancelText="Không"
           >
-            <Button type="text" danger icon={<DeleteOutlined />}>
-              Xóa
-            </Button>
+            <Button icon={<DeleteOutlined />} danger title="Xóa" />
           </Popconfirm>
         </Space>
       ),
     },
   ];
 
+  if (error) {
+    return (
+      <Alert
+        message="Lỗi"
+        description="Không thể tải danh sách người dùng"
+        type="error"
+      />
+    );
+  }
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Quản lý người dùng</h1>
-        <Button type="primary" onClick={handleAdd}>
-          Thêm người dùng mới
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleAdd}
+        >
+          Thêm người dùng
         </Button>
       </div>
-
-      {error && (
-        <Alert
-          message="Lỗi"
-          description={
-            error instanceof Error
-              ? error.message
-              : "Không thể tải danh sách người dùng"
-          }
-          type="error"
-          showIcon
-          className="mb-4"
-        />
-      )}
 
       <Table
         columns={columns}
@@ -465,14 +379,10 @@ const UserManagement: React.FC = () => {
       />
 
       <Modal
-        title={editingUser ? "Chỉnh sửa người dùng" : "Thêm người dùng"}
+        title={editingUser ? "Chỉnh sửa người dùng" : "Thêm người dùng mới"}
         open={modalVisible}
         onOk={handleModalOk}
-        onCancel={() => {
-          console.log("Modal cancel clicked");
-          setModalVisible(false);
-        }}
-        confirmLoading={createMutation.isPending || updateMutation.isPending}
+        onCancel={() => setModalVisible(false)}
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -492,23 +402,15 @@ const UserManagement: React.FC = () => {
           >
             <Input />
           </Form.Item>
-          {!editingUser && (
-            <Form.Item
-              name="password"
-              label="Mật khẩu"
-              rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
-            >
-              <Input.Password />
-            </Form.Item>
-          )}
           <Form.Item
             name="role"
             label="Vai trò"
             rules={[{ required: true, message: "Vui lòng chọn vai trò" }]}
           >
             <Select>
-              <Option value="admin">Quản trị viên</Option>
+              <Option value="admin">Admin</Option>
               <Option value="teacher">Giáo viên</Option>
+              <Option value="student">Sinh viên</Option>
             </Select>
           </Form.Item>
           <Form.Item
@@ -518,6 +420,7 @@ const UserManagement: React.FC = () => {
           >
             <Select>
               <Option value="active">Hoạt động</Option>
+              <Option value="inactive">Không hoạt động</Option>
               <Option value="blocked">Đã khóa</Option>
             </Select>
           </Form.Item>
@@ -529,22 +432,17 @@ const UserManagement: React.FC = () => {
         open={resetPasswordModalVisible}
         onOk={handleResetPasswordSubmit}
         onCancel={() => setResetPasswordModalVisible(false)}
-        confirmLoading={
-          requestPasswordResetMutation.isPending ||
-          resetPasswordMutation.isPending
-        }
       >
         <Form form={resetPasswordForm} layout="vertical">
-          <Form.Item label="Phương thức đặt lại mật khẩu">
+          <Form.Item name="resetMethod" label="Phương thức đặt lại">
             <Select
               value={resetPasswordMethod}
               onChange={(value) => setResetPasswordMethod(value)}
             >
               <Option value="email">Gửi email đặt lại mật khẩu</Option>
-              <Option value="manual">Nhập mật khẩu mới</Option>
+              <Option value="manual">Đặt mật khẩu mới trực tiếp</Option>
             </Select>
           </Form.Item>
-
           {resetPasswordMethod === "manual" && (
             <Form.Item
               name="newPassword"
@@ -563,4 +461,4 @@ const UserManagement: React.FC = () => {
   );
 };
 
-export default UserManagement;
+export default UserManagement; 

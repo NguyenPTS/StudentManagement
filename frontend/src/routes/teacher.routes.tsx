@@ -3,7 +3,7 @@ import { RouteObject } from "react-router-dom";
 import PrivateRoute from "./PrivateRoute";
 import StudentList from "../pages/teacher/StudentList";
 import StudentForm from "../pages/teacher/StudentForm";
-import TeacherDashboard from "@/pages/teacher/TeacherDashboard";
+import TeacherDashboard from "../pages/teacher/TeacherDashboard";
 
 const teacherRoutes: RouteObject[] = [
   {

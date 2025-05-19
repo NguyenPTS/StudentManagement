@@ -21,7 +21,7 @@ const seedAdmin = async () => {
     }
 
     // Create admin account
-    const hashedPassword = await bcrypt.hash("Admin@123", 10);
+    const hashedPassword = await bcrypt.hash("", 10);
     const admin = new User({
       email: "admin@studentmanagement.com",
       password: hashedPassword,
@@ -32,7 +32,7 @@ const seedAdmin = async () => {
     await admin.save();
     console.log("✅ Admin account created successfully");
     console.log("Email: admin@studentmanagement.com");
-    console.log("Password: Admin@123");
+    console.log("Password: vi");
 
     process.exit(0);
   } catch (error) {

@@ -4,22 +4,30 @@ import Layout from "../components/layout/Layout";
 import Loading from "../components/Loading";
 import ErrorBoundary from "../components/ErrorBoundary";
 import PrivateRoute from "./PrivateRoute";
+import DashboardLayout from '../layouts/DashboardLayout';
+import RoleGuard from '../components/guards/RoleGuard';
+import Login from '../pages/auth/Login';
+import Dashboard from '../pages/dashboard';
+import StudentList from '../pages/admin/StudentList';
+import StudentForm from '../pages/admin/StudentForm';
+import ClassList from '../pages/admin/ClassList';
+import ClassForm from '../pages/admin/ClassForm';
+import TeacherList from '../pages/admin/TeacherList';
+import TeacherForm from '../pages/admin/TeacherForm';
+import GradeManagement from '../pages/admin/GradeManagement';
+import Settings from '../pages/admin/Settings';
+import { ProtectedRoute } from '../components/auth';
+import { Profile } from '../pages/shared/profile';
+import { NotFound } from '../pages/shared/error';
+import { UserList, UserForm } from '../pages/management';
 
 // Lazy load components
-const Login = lazy(() => import("../pages/auth/Login"));
 const Register = lazy(() => import("../pages/auth/Register"));
-const Profile = lazy(() => import("../pages/Profile"));
 const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard"));
-const UserList = lazy(() => import("../pages/admin/UserList"));
-const UserForm = lazy(() => import("../pages/admin/UserForm"));
-const StudentList = lazy(() => import("../pages/admin/StudentList"));
-const StudentForm = lazy(() => import("../pages/admin/StudentForm"));
 const TeacherDashboard = lazy(() => import("../pages/teacher/TeacherDashboard"));
 const TeacherStudentList = lazy(() => import("../pages/teacher/StudentList"));
 const TeacherStudentForm = lazy(() => import("../pages/teacher/StudentForm"));
-const ClassList = lazy(() => import("../pages/teacher/ClassList"));
 const ClassStudents = lazy(() => import("../pages/teacher/ClassStudents"));
-const NotFound = lazy(() => import("../pages/NotFound"));
 
 // Auth layout without header and sidebar
 const AuthLayout: React.FC = () => (
@@ -33,145 +41,152 @@ const AuthLayout: React.FC = () => (
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/auth/login" replace />,
-    errorElement: <ErrorBoundary />,
-  },
-  {
-    path: "/auth",
-    element: <AuthLayout />,
-    errorElement: <ErrorBoundary />,
+    element: <Layout />,
     children: [
       {
-        path: "login",
-        element: <Login />,
+        path: 'classes',
+        children: [
+          {
+            index: true,
+            element: (
+              <ProtectedRoute>
+                <ClassList />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'create',
+            element: (
+              <ProtectedRoute roles={['admin', 'teacher']}>
+                <ClassForm />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'edit/:id',
+            element: (
+              <ProtectedRoute roles={['admin', 'teacher']}>
+                <ClassForm />
+              </ProtectedRoute>
+            ),
+          },
+        ],
       },
       {
-        path: "register",
-        element: <Register />,
+        path: 'grades',
+        element: (
+          <ProtectedRoute roles={['admin', 'teacher']}>
+            <GradeManagement />
+          </ProtectedRoute>
+        ),
       },
-    ],
-  },
-  {
-    path: "/profile",
-    element: (
-      <PrivateRoute roles={["admin", "teacher"]}>
-        <Layout showSidebar={false}>
-          <Suspense fallback={<Loading />}>
+      {
+        path: 'students',
+        children: [
+          {
+            index: true,
+            element: (
+              <ProtectedRoute>
+                <StudentList />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'create',
+            element: (
+              <ProtectedRoute roles={['admin']}>
+                <StudentForm />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'edit/:id',
+            element: (
+              <ProtectedRoute roles={['admin']}>
+                <StudentForm />
+              </ProtectedRoute>
+            ),
+          },
+        ],
+      },
+      {
+        path: 'teachers',
+        children: [
+          {
+            index: true,
+            element: (
+              <ProtectedRoute>
+                <TeacherList />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'create',
+            element: (
+              <ProtectedRoute roles={['admin']}>
+                <TeacherForm />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'edit/:id',
+            element: (
+              <ProtectedRoute roles={['admin']}>
+                <TeacherForm />
+              </ProtectedRoute>
+            ),
+          },
+        ],
+      },
+      {
+        path: 'users',
+        children: [
+          {
+            index: true,
+            element: (
+              <ProtectedRoute roles={['admin']}>
+                <UserList />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'create',
+            element: (
+              <ProtectedRoute roles={['admin']}>
+                <UserForm />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'edit/:id',
+            element: (
+              <ProtectedRoute roles={['admin']}>
+                <UserForm />
+              </ProtectedRoute>
+            ),
+          },
+        ],
+      },
+      {
+        path: 'profile',
+        element: (
+          <ProtectedRoute>
             <Profile />
-          </Suspense>
-        </Layout>
-      </PrivateRoute>
-    ),
-  },
-  {
-    path: "/admin",
-    element: (
-      <PrivateRoute roles={["admin"]}>
-        <Layout showSidebar={true} role="admin">
-          <Suspense fallback={<Loading />}>
-            <Outlet />
-          </Suspense>
-        </Layout>
-      </PrivateRoute>
-    ),
-    errorElement: <ErrorBoundary />,
-    children: [
-      {
-        index: true,
-        element: <AdminDashboard />,
-      },
-      {
-        path: "users",
-        children: [
-          {
-            index: true,
-            element: <UserList />,
-          },
-          {
-            path: "create",
-            element: <UserForm />,
-          },
-          {
-            path: ":id/edit",
-            element: <UserForm />,
-          },
-        ],
-      },
-      {
-        path: "students",
-        children: [
-          {
-            index: true,
-            element: <StudentList />,
-          },
-          {
-            path: "create",
-            element: <StudentForm />,
-          },
-          {
-            path: ":id/edit",
-            element: <StudentForm />,
-          },
-        ],
+          </ProtectedRoute>
+        ),
       },
     ],
   },
   {
-    path: "/teacher",
-    element: (
-      <PrivateRoute roles={["teacher"]}>
-        <Layout showSidebar={true} role="teacher">
-          <Suspense fallback={<Loading />}>
-            <Outlet />
-          </Suspense>
-        </Layout>
-      </PrivateRoute>
-    ),
-    errorElement: <ErrorBoundary />,
-    children: [
-      {
-        index: true,
-        element: <TeacherDashboard />,
-      },
-      {
-        path: "students",
-        children: [
-          {
-            index: true,
-            element: <TeacherStudentList />,
-          },
-          {
-            path: "create",
-            element: <TeacherStudentForm />,
-          },
-          {
-            path: ":id/edit",
-            element: <TeacherStudentForm />,
-          },
-        ],
-      },
-      {
-        path: "classes",
-        children: [
-          {
-            index: true,
-            element: <ClassList />,
-          },
-          {
-            path: ":id/students",
-            element: <ClassStudents />,
-          },
-        ],
-      },
-    ],
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/register",
+    element: <Register />,
   },
   {
     path: "*",
-    element: (
-      <Layout showSidebar={false}>
-        <NotFound />
-      </Layout>
-    ),
-    errorElement: <ErrorBoundary />,
+    element: <NotFound />,
   },
 ]);
