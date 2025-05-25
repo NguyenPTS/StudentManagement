@@ -3,4 +3,13 @@ export interface Schedule {
   startTime: string;  // Format: "HH:mm"
   endTime: string;    // Format: "HH:mm"
   room?: string;
-} 
+}
+
+export interface CreateScheduleDTO {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  room?: string;
+}
+
+export interface UpdateScheduleDTO extends Partial<CreateScheduleDTO> {} 

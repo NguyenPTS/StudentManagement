@@ -1,51 +1,13 @@
+import type { Teacher } from './teacher';
+import type { Student } from './student';
 import { Assignment } from './assignment';
+
+export type ClassStatus = 'active' | 'inactive' | 'completed';
 
 export interface Schedule {
   dayOfWeek: number;
   startTime: string;
   endTime: string;
-  room?: string;
-}
-
-export type ClassStatus = 'active' | 'inactive' | 'completed';
-
-export interface Student {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  status: 'active' | 'inactive';
-  averageScore?: number;
-  attendance?: {
-    present: number;
-    total: number;
-  };
-}
-
-export interface Grade {
-  studentId: string;
-  assignments: Assignment[];
-  finalGrade?: number;
-}
-
-export interface ActivityLog {
-  id: string;
-  classId: string;
-  userId: string;
-  action: 'create' | 'update' | 'delete' | 'import' | 'export' | 'grade_update' | 'notification_sent';
-  details: any;
-  timestamp: Date;
-}
-
-export interface ClassStatistics {
-  totalStudents: number;
-  activeStudents: number;
-  averageGrade: number;
-  excellentCount: number;  // 9.0-10
-  goodCount: number;       // 8.0-8.9
-  aboveAverageCount: number; // 7.0-7.9
-  averageCount: number;    // 5.0-6.9
-  belowAverageCount: number; // <5.0
 }
 
 export interface Class {
@@ -53,20 +15,14 @@ export interface Class {
   name: string;
   code: string;
   description?: string;
-  teacherId?: string;
-  teacher?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  studentCount: number;
+  teacher?: Teacher;
+  students?: Student[];
+  schedule: Schedule[];
+  semester: number;
+  status: ClassStatus;
   maxStudents: number;
   academicYear: string;
-  semester: number;
   subject: string;
-  schedule: Schedule[];
-  status: ClassStatus;
-  grades?: Grade[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -76,12 +32,12 @@ export interface CreateClassDTO {
   code: string;
   description?: string;
   teacherId?: string;
+  schedule: Schedule[];
+  semester: number;
+  status: ClassStatus;
   maxStudents: number;
   academicYear: string;
-  semester: number;
   subject: string;
-  schedule: Schedule[];
-  status?: ClassStatus;
 }
 
 export interface UpdateClassDTO extends Partial<CreateClassDTO> {}
@@ -89,7 +45,34 @@ export interface UpdateClassDTO extends Partial<CreateClassDTO> {}
 export interface ClassFilters {
   academicYear?: string;
   semester?: number;
-  subject?: string;
   status?: ClassStatus;
   teacherId?: string;
+  subject?: string;
+}
+
+export interface Grade {
+  studentId: string;
+  assignments: {
+    id: string;
+    name: string;
+    score: number;
+  }[];
+  finalGrade?: number;
+}
+
+export interface ClassStatistics {
+  totalStudents: number;
+  averageGrade: number;
+  excellentCount: number;
+  goodCount: number;
+  averageCount: number;
+  belowAverageCount: number;
+}
+
+export interface ActivityLog {
+  id: string;
+  action: string;
+  description: string;
+  performedBy: string;
+  timestamp: Date;
 } 

@@ -1,16 +1,14 @@
 export interface Teacher {
-  _id: string;
+  id: string;
   name: string;
   email: string;
   phone?: string;
-  role: 'teacher';
-  status: 'active' | 'inactive';
-  emailVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
-  specialization?: string[];
-  qualifications?: string[];
+  specialization?: string;
   experience?: number;
+  status: 'active' | 'inactive';
+  createdAt: Date;
+  updatedAt: Date;
+  emailVerified: boolean;
   subjects?: string[];
   bio?: string;
   avatar?: string;
@@ -19,7 +17,7 @@ export interface Teacher {
   totalRatings?: number;
 }
 
-export interface TeacherFormData extends Omit<Teacher, '_id' | 'createdAt' | 'updatedAt'> {
+export interface TeacherFormData extends Omit<Teacher, 'createdAt' | 'updatedAt'> {
   password?: string;
 }
 
@@ -27,4 +25,14 @@ export interface TeacherFilters {
   status?: 'active' | 'inactive';
   subject?: string;
   specialization?: string;
-} 
+}
+
+export interface CreateTeacherDTO {
+  name: string;
+  email: string;
+  phone?: string;
+  specialization?: string;
+  experience?: number;
+}
+
+export interface UpdateTeacherDTO extends Partial<CreateTeacherDTO> {} 
